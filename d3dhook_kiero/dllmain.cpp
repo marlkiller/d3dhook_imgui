@@ -46,6 +46,7 @@ using namespace std;
 int mainThread()
 {
     LOG_INFO("mainThread");
+    // TODO HOOK WITH detours
     if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
     {
 
@@ -106,6 +107,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
+        // TODO unhook
         break;
     }
     return TRUE;

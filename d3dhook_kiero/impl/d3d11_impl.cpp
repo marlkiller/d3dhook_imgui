@@ -218,6 +218,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
 void impl::d3d11::init()
 {
+	// TODO hook with detours
+    // TODO hook drawIndex
 	kiero::Status::Enum status = kiero::bind(8, (void**)&oPresent, hkPresent11);
 	LOG_INFO("impl::d3d11::init {%d}", status);
 }
