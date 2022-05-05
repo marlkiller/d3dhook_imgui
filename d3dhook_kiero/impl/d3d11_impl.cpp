@@ -87,7 +87,8 @@ static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 static bool draw_fov = false;
 static bool draw_filled_fov = false;
 static int fov_size = 0;
- 
+static float bg_alpha = 1;
+
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 	static bool init = false;
@@ -153,6 +154,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
 		if (p_open)
 		{
+			ImGui::SetNextWindowBgAlpha(bg_alpha);
 			ImGui::Begin("My Windows ", &p_open);
 			ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
@@ -166,6 +168,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 			ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
 
 			ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d");
+			ImGui::SliderFloat("bg_alpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
 
 			if (ImGui::Button("Detach"))
 			{
