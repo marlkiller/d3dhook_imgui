@@ -100,8 +100,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
         {
             OPEN_COONSOLE();
         }
-        LOG_INFO("CONSOLE_LOGGING {%d}", CONSOLE_LOGGING);
-        global::dllHWND = hModule;
+        LOG_INFO("Platform {%s},CONSOLE_LOGGING {%d}", IS_X64?"x64":"x86", CONSOLE_LOGGING);
+        global::Dll_HWND = hModule;
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)mainThread, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

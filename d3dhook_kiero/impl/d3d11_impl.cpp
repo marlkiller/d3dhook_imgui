@@ -1,6 +1,7 @@
 ﻿#include "../kiero.h"
 #include "../global.h"
 
+
 #if KIERO_INCLUDE_D3D11
 
 #include "d3d11_impl.h"
@@ -17,6 +18,7 @@
 #pragma comment(lib, "winmm.lib ")
 
 
+
 typedef long(__stdcall* Present)(IDXGISwapChain*, UINT, UINT);
 static Present oPresent = NULL;
 static WNDPROC OriginalWndProcHandler = nullptr;
@@ -29,9 +31,22 @@ static bool greetings = false;
 
 int un_init()
 {
-	kiero::unbind(8);
-	kiero::shutdown();
-	FreeLibrary(global::dllHWND);
+	try
+	{
+		LOG_INFO("un_init");
+		kiero::unbind(8);
+		kiero::shutdown();
+		LOG_INFO("FreeLibrary with {%d}", global::Dll_HWND);
+		FreeLibrary(global::Dll_HWND);
+		
+	}
+	catch (...)
+	{
+		std::exception_ptr p = std::current_exception();
+		LOG_ERROR("ERROR");
+		LOG_ERROR("ERROR : {%s}", p);
+		throw;
+	}
 	return 1;
 }
 
@@ -72,108 +87,129 @@ static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 static bool draw_fov = false;
 static bool draw_filled_fov = false;
 static int fov_size = 0;
-
+ 
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 	static bool init = false;
-	if (!init)
-	{
-		LOG_INFO("imgui first init {%d}", init)
-		greetings = true;
-		DXGI_SWAP_CHAIN_DESC desc;
-		pSwapChain->GetDesc(&desc);
-		ID3D11Device* pDevice;
-		pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
-
-		pDevice->GetImmediateContext(&pContext);
-
-		//impl::win32::init(desc.OutputWindow);
-		ImGui::CreateContext();
-		ImGui_ImplWin32_Init(desc.OutputWindow);
-		ImGui_ImplDX11_Init(pDevice,pContext);
-		ID3D11Texture2D* pBackBuffer;
-		pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-		pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-		OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, GWLP_WNDPROC, (LONG_PTR)hWndProc);
-		init = true;
-	}
 	
-
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	ImGuiIO& io = ImGui::GetIO(); (void)io;	
-
-	// greetings
-	if (greetings)
-	{
-		int sub_win_width = 300;
-		int sub_win_height = 40;
-		ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2))); // 去掉 
-
-		ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
-		ImGui::Text("Wallhack loaded, press INSERT for menu");
-		ImGui::End();
-
-		static DWORD lastTime = timeGetTime();
-		DWORD timePassed = timeGetTime() - lastTime;
-		if (timePassed > 6000)
+	try {
+		if (!init)
 		{
-			LOG_INFO("greetings init timePassed {%d}", timePassed);
-			greetings = false;
-			lastTime = timeGetTime();
+			LOG_INFO("imgui first init {%d}", init)
+				greetings = true;
+			DXGI_SWAP_CHAIN_DESC desc;
+			pSwapChain->GetDesc(&desc);
+			ID3D11Device* pDevice;
+			pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
+
+			pDevice->GetImmediateContext(&pContext);
+
+			//impl::win32::init(desc.OutputWindow);
+			global::GAME_HWND = desc.OutputWindow;
+			ImGui::CreateContext();
+			ImGui_ImplWin32_Init(desc.OutputWindow);
+			ImGui_ImplDX11_Init(pDevice, pContext);
+			ID3D11Texture2D* pBackBuffer;
+			pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+			pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
+			OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
+			LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, OriginalWndProcHandler);
+			init = true;
 		}
-	}
 
-	if (p_open)
-		ImGui::GetIO().MouseDrawCursor = 1;
-	else
-		ImGui::GetIO().MouseDrawCursor = 0;
 
- 	if (p_open) 
-	{	
-		ImGui::Begin("My Windows ", &p_open);
-		ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
 
-		if (ImGui::Checkbox("DrawFOV", &draw_fov))
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+		// greetings
+		if (greetings)
 		{
-			if (draw_fov && !fov_size)
+			float sub_win_width = 300;
+			float sub_win_height = 40;
+			ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
+			ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2)));
+
+			ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
+			ImGui::Text("Wallhack loaded, press INSERT for menu");
+			ImGui::End();
+
+			static DWORD lastTime = timeGetTime();
+			DWORD timePassed = timeGetTime() - lastTime;
+			if (timePassed > 6000)
 			{
-				fov_size = 100;
+				LOG_INFO("greetings init timePassed {%d}", timePassed);
+				greetings = false;
+				lastTime = timeGetTime();
 			}
 		}
-		ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
 
-		ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d%%");
+		if (p_open)
+			ImGui::GetIO().MouseDrawCursor = 1;
+		else
+			ImGui::GetIO().MouseDrawCursor = 0;
 
-		if (ImGui::Button("Detach"))
+		if (p_open)
 		{
+			ImGui::Begin("My Windows ", &p_open);
+			ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+			if (ImGui::Checkbox("DrawFOV", &draw_fov))
+			{
+				if (draw_fov && !fov_size)
+				{
+					fov_size = 100;
+				}
+			}
+			ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
+
+			ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d");
+
+			if (ImGui::Button("Detach"))
+			{
+				ImGui::End();
+				ImGui::EndFrame();
+				ImGui::Render();
+				pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+				ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+				ImGui_ImplDX11_Shutdown();
+				ImGui_ImplWin32_Shutdown();
+				ImGui::DestroyContext();
+
+				SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
+				LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
+				CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)un_init, NULL, 0, NULL);
+				return oPresent(pSwapChain, SyncInterval, Flags);
+			}
 			ImGui::End();
-			ImGui::EndFrame();
-			ImGui::Render();
-			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-			CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)un_init, NULL, 0, NULL);
-			return oPresent(pSwapChain, SyncInterval, Flags);
 		}
-		ImGui::End();
+
+		const auto draw = ImGui::GetBackgroundDrawList();
+		static const auto size = ImGui::GetIO().DisplaySize;
+		static const auto center = ImVec2(size.x / 2, size.y / 2);
+
+		if (draw_fov)
+			draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
+
+		if (draw_filled_fov)
+			draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
+
+		ImGui::EndFrame();
+		ImGui::Render();
+		pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+		OUTPUT_DEBUG(L"init {%d},greetings {%d},p_open {%d}, draw_fov {%d},draw_filled_fov {%d}\n", init, greetings, p_open, draw_fov, draw_filled_fov);
 	}
-
-	const auto draw = ImGui::GetBackgroundDrawList();
-	static const auto size = ImGui::GetIO().DisplaySize;
-	static const auto center = ImVec2(size.x / 2, size.y / 2);
-
-	if (draw_fov)
-		draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
-
-	if (draw_filled_fov)
-		draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
-	
-	ImGui::EndFrame();
-	ImGui::Render();
-	pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	catch (...) {
+		std::exception_ptr p = std::current_exception();
+		LOG_ERROR("ERROR");
+		LOG_ERROR("ERROR : {%s}", p);
+		throw;
+	}
 	return oPresent(pSwapChain, SyncInterval, Flags);
 }
 

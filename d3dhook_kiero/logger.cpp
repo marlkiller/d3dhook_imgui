@@ -5,7 +5,7 @@
 
 #include "logger.h"
 #include <iostream>
-
+#include <stdarg.h>
 using namespace std;
 
 #define RUN_LOG_FILENAME "RunLog.log"
@@ -168,4 +168,20 @@ void __cdecl LogPrinter::CloseConsole() {
         FreeConsole();
         mConsoleOpen = FALSE;
     }
+}
+
+void __cdecl LogPrinter::OutputDebug(const WCHAR* format, ...) {
+    WCHAR strBuffer[4096] = { 0 };
+    // VA_LIST 是在C语言中解决变参问题的一组宏，所在头文件：#include <stdarg.h>，用于获取不确定个数的参数。
+    va_list vlArgs;
+    // VA_START宏，用va_start宏初始化变量刚定义的va_list变量，使其指向第一个可变参数的地址（参数strOutputString在堆栈中的地址）
+    va_start(vlArgs, format);
+    // _vsnwprintf_s是_vsnprintf更安全的版本。
+    _vsnwprintf_s(strBuffer, ARRAYSIZE(strBuffer) - 1, ARRAYSIZE(strBuffer) - 1, format, vlArgs);
+    // 关掉指针va_list 
+    va_end(vlArgs);
+
+    // 当编写非控制台程序时输出调试信息（属于windows API）
+    OutputDebugString(strBuffer);
+    
 }

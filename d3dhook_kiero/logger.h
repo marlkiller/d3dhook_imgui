@@ -8,6 +8,7 @@
 #define LOG_DEBUG(format, ...) LogPrinter::LogPrint(PRINT_LEV_DEBUG, __FILE__, __LINE__, format, __VA_ARGS__);
 #define OPEN_COONSOLE() LogPrinter::OpenConsole();
 #define CLOSE_COONSOLE() LogPrinter::CloseConsole();
+#define OUTPUT_DEBUG(format,...) LogPrinter::OutputDebug(format,__VA_ARGS__);
 
 enum PRINT_LEV
 {
@@ -31,6 +32,7 @@ public:
 
     static void OpenConsole();
     static void CloseConsole();
+    static void OutputDebug(const WCHAR* format, ...);
 
 private:
     class LogPrinterDef;

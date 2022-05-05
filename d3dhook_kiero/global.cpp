@@ -1,6 +1,9 @@
 #include <wtypes.h>
+
 namespace global
 {
-	HMODULE dllHWND = nullptr;
+	HMODULE Dll_HWND = nullptr;
+	HWND GAME_HWND = nullptr;
+
 
 }
