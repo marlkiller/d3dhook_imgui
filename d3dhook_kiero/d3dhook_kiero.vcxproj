@@ -151,7 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="console.h" />
+    <ClInclude Include="common_utils.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -170,6 +170,7 @@
     <ClInclude Include="impl\shared.h" />
     <ClInclude Include="impl\win32_impl.h" />
     <ClInclude Include="kiero.h" />
+    <ClInclude Include="logger.h" />
     <ClInclude Include="minhook\include\MinHook.h" />
     <ClInclude Include="minhook\src\buffer.h" />
     <ClInclude Include="minhook\src\hde\hde32.h" />
@@ -181,7 +182,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="console.cpp" />
+    <ClCompile Include="common_utils.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="global.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="impl\shared.cpp" />
     <ClCompile Include="impl\win32_impl.cpp" />
     <ClCompile Include="kiero.cpp" />
+    <ClCompile Include="logger.cpp" />
     <ClCompile Include="minhook\src\buffer.c" />
     <ClCompile Include="minhook\src\hde\hde32.c" />
     <ClCompile Include="minhook\src\hde\hde64.c" />

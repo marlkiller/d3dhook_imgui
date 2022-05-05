@@ -102,10 +102,13 @@
     <ClInclude Include="minhook\src\trampoline.h">
       <Filter>minhook</Filter>
     </ClInclude>
-    <ClInclude Include="console.h">
+    <ClInclude Include="common_utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="global.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -176,10 +179,13 @@
     <ClCompile Include="minhook\src\trampoline.c">
       <Filter>minhook</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
+    <ClCompile Include="common_utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="global.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="logger.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

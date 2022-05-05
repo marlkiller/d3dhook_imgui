@@ -13,6 +13,7 @@
 #include "../imgui/imgui_impl_win32.h"
 #include "../imgui/imgui_impl_dx11.h"
 #include <iostream>
+#include "../logger.h"
 #pragma comment(lib, "winmm.lib ")
 
 
@@ -67,13 +68,17 @@ LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 static ID3D11DeviceContext* pContext = nullptr;
 static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 
+
+static bool draw_fov = false;
+static bool draw_filled_fov = false;
+static int fov_size = 0;
+
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
 	static bool init = false;
 	if (!init)
 	{
-		std::cout << "init : %d" << init << std::endl;
-		std::cout << "imgui first init" << std::endl;
+		LOG_INFO("imgui first init {%d}", init)
 		greetings = true;
 		DXGI_SWAP_CHAIN_DESC desc;
 		pSwapChain->GetDesc(&desc);
@@ -103,7 +108,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 	// greetings
 	if (greetings)
 	{
-		std::cout << "greetings init" << std::endl;
 		int sub_win_width = 300;
 		int sub_win_height = 40;
 		ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
@@ -117,7 +121,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 		DWORD timePassed = timeGetTime() - lastTime;
 		if (timePassed > 6000)
 		{
-			std::cout << "greetings init timePassed : " << timePassed << std::endl;
+			LOG_INFO("greetings init timePassed {%d}", timePassed);
 			greetings = false;
 			lastTime = timeGetTime();
 		}
@@ -128,11 +132,22 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 	else
 		ImGui::GetIO().MouseDrawCursor = 0;
 
-	std::cout << "p_open : " << p_open << std::endl;
-	if (p_open) 
+ 	if (p_open) 
 	{	
 		ImGui::Begin("My Windows ", &p_open);
 		ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+		if (ImGui::Checkbox("DrawFOV", &draw_fov))
+		{
+			if (draw_fov && !fov_size)
+			{
+				fov_size = 100;
+			}
+		}
+		ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
+
+		ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d%%");
+
 		if (ImGui::Button("Detach"))
 		{
 			ImGui::End();
@@ -144,6 +159,16 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 		}
 		ImGui::End();
 	}
+
+	const auto draw = ImGui::GetBackgroundDrawList();
+	static const auto size = ImGui::GetIO().DisplaySize;
+	static const auto center = ImVec2(size.x / 2, size.y / 2);
+
+	if (draw_fov)
+		draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
+
+	if (draw_filled_fov)
+		draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
 	
 	ImGui::EndFrame();
 	ImGui::Render();
@@ -154,10 +179,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
 void impl::d3d11::init()
 {
-	std::cout << "impl::d3d11::init" << std::endl;
 	kiero::Status::Enum status = kiero::bind(8, (void**)&oPresent, hkPresent11);
-	std::cout << "impl::d3d11::init : %d" << status << std::endl;
-	//assert(kiero::bind(8, (void**)&oPresent, hkPresent11) == kiero::Status::Success);
+	LOG_INFO("impl::d3d11::init {%d}", status);
 }
 
 #endif // KIERO_INCLUDE_D3D11

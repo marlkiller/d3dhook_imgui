@@ -4,8 +4,8 @@
 
 #include "kiero.h"
 #include <Windows.h>
-#include "console.h"
 #include "global.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -42,10 +42,10 @@ using namespace std;
 #define CONSOLE_LOGGING false
 #endif 
 
-ConsoleUtil* Util = new ConsoleUtil();
-
+ 
 int mainThread()
 {
+    LOG_INFO("mainThread");
     if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
     {
 
@@ -94,15 +94,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        LOG_INFO("DLL_PROCESS_ATTACH {%d},{%d},{%d}", hModule, ul_reason_for_call, lpReserved)
+
         if (CONSOLE_LOGGING)
         {
-            Util->OpenConsole();
-            string log = "this is OpenConsole log";
-            cout << "d3d hook >> " << log.c_str() << endl;
+            OPEN_COONSOLE();
         }
-        else {
-            //Util->OpenConsole();
-        }
+        LOG_INFO("CONSOLE_LOGGING {%d}", CONSOLE_LOGGING);
         global::dllHWND = hModule;
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)mainThread, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:

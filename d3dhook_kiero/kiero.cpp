@@ -34,6 +34,7 @@
 # include "minhook/include/MinHook.h"
 #endif
 #include <iostream>
+#include "logger.h"
 
 #ifdef _UNICODE
 # define KIERO_TEXT(text) L##text
@@ -49,7 +50,7 @@ static uint150_t* g_methodsTable = NULL;
 
 kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 {
-	std::cout << "kiero::init RenderType >> " << _renderType << std::endl;
+	LOG_INFO("init with RenderrType {%d}", _renderType);
 
 	if (g_renderType != RenderType::None)
 	{
@@ -78,7 +79,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 			windowClass.hIconSm = NULL;
 
 			::RegisterClassEx(&windowClass);
-			std::cout << "RegisterClassEx(&windowClass) " << std::endl;
+			LOG_INFO("RegisterClassEx(&windowClass)");
 
 			HWND window = ::CreateWindow(windowClass.lpszClassName, KIERO_TEXT("Kiero DirectX Window"), WS_OVERLAPPEDWINDOW, 0, 0, 100, 100, NULL, NULL, windowClass.hInstance, NULL);
 			if (_renderType == RenderType::D3D9)
@@ -267,7 +268,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 			else if (_renderType == RenderType::D3D11)
 			{
 #if KIERO_INCLUDE_D3D11
-				std::cout << "GetModuleHandle(KIERO_TEXT(d3d11.dll))" << std::endl;
+				LOG_INFO("get module with d3d11.dll")
 				HMODULE libD3D11;
 				if ((libD3D11 = ::GetModuleHandle(KIERO_TEXT("d3d11.dll"))) == NULL)
 				{
@@ -276,7 +277,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 					return Status::ModuleNotFoundError;
 				}
 
-				std::cout << "GetProcAddress(libD3D11, D3D11CreateDeviceAndSwapChain))" << std::endl;
+				LOG_INFO("GetProcAddress with {%s}-{%s}", "libD3D11", "D3D11CreateDeviceAndSwapChain");
 				void* D3D11CreateDeviceAndSwapChain;
 				if ((D3D11CreateDeviceAndSwapChain = ::GetProcAddress(libD3D11, "D3D11CreateDeviceAndSwapChain")) == NULL)
 				{
@@ -318,7 +319,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 				ID3D11Device* device;
 				ID3D11DeviceContext* context;
 
-				std::cout << "((long(__stdcall*" << std::endl;
+				LOG_INFO("__stdcall D3D11CreateDeviceAndSwapChain");
 				if (((long(__stdcall*)(
 					IDXGIAdapter*,
 					D3D_DRIVER_TYPE,
@@ -345,11 +346,11 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 
 
 #if KIERO_USE_MINHOOK
-				std::cout << "MH_Initialize" << std::endl;
+				LOG_INFO("MH_Initialize");
 				MH_Initialize();
 #endif
 
-				std::cout << "Release..." << std::endl;
+				LOG_INFO("Release...");
 				swapChain->Release();
 				swapChain = NULL;
 
@@ -363,7 +364,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 				::UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
 
 				g_renderType = RenderType::D3D11;
-				std::cout << "DestroyWindow...UnregisterClass...Success" << std::endl;
+				LOG_INFO("DestroyWindow...UnregisterClass...Success");
 				return Status::Success;
 #endif
 			}
