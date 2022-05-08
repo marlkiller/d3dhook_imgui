@@ -25,6 +25,7 @@ using namespace std;
 
 #if KIERO_INCLUDE_D3D12
 #endif
+#include "common_utils.h"
 
 #if KIERO_INCLUDE_OPENGL
 #endif
@@ -45,43 +46,34 @@ using namespace std;
  
 int mainThread()
 {
-    LOG_INFO("mainThread");
-    if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
-    {
+   
+    Enum version = common_utils::GetDirectVersion();
 
-        switch (kiero::getRenderType())
-        {
-#if KIERO_INCLUDE_D3D9
-        case kiero::RenderType::D3D9:
-            impl::d3d9::init();
+    LOG_INFO("Get directX version is {%d}",version);
+    switch (version)
+    {
+        case None:
             break;
-#endif
-#if KIERO_INCLUDE_D3D10
-        case kiero::RenderType::D3D10:
-            impl::d3d10::init();
+        case D3D9:
+            //impl::d3d9::init();
             break;
-#endif
-#if KIERO_INCLUDE_D3D11
-        case kiero::RenderType::D3D11:
+        case D3D10:
+            //impl::d3d10::init();
+            break;
+        case D3D11:
             impl::d3d11::init();
             break;
-#endif
-        case kiero::RenderType::D3D12:
-            // TODO: D3D12 implementation?
+        case D3D12:
             break;
-        case kiero::RenderType::OpenGL:
-            // TODO: OpenGL implementation?
+        case OpenGL:
             break;
-        case kiero::RenderType::Vulkan:
-            // TODO: Vulkan implementation?
+        case Vulkan:
             break;
-        }
-
-        return 1;
+        case Auto:
+            break;
+        default:
+            break;
     }
-    else {
-    }
-
     return 0;
 }
 BOOL APIENTRY DllMain(HMODULE hModule,
@@ -89,11 +81,12 @@ BOOL APIENTRY DllMain(HMODULE hModule,
                        LPVOID lpReserved
                      )
 {
-    //DisableThreadLibraryCalls(hModule);
 
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        //DisableThreadLibraryCalls(hModule);
+
         LOG_INFO("DLL_PROCESS_ATTACH {%d},{%d},{%d}", hModule, ul_reason_for_call, lpReserved)
 
         if (CONSOLE_LOGGING)

@@ -43,14 +43,14 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="common_utils.h" />
+    <ClInclude Include="detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="imgui_plugin.h" />
     <ClInclude Include="impl\d3d10_impl.h" />
     <ClInclude Include="impl\d3d11_impl.h" />
     <ClInclude Include="impl\d3d9_impl.h" />
@@ -194,6 +196,7 @@
     <ClCompile Include="imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="imgui_plugin.cpp" />
     <ClCompile Include="impl\d3d10_impl.cpp" />
     <ClCompile Include="impl\d3d11_impl.cpp" />
     <ClCompile Include="impl\d3d9_impl.cpp" />
@@ -225,6 +228,12 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="minhook\dll_resources\MinHook.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="detours.X64\detours.lib" />
+    <Library Include="detours.X64\syelog.lib" />
+    <Library Include="detours.X86\detours.lib" />
+    <Library Include="detours.X86\syelog.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

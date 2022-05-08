@@ -182,6 +182,6 @@ void __cdecl LogPrinter::OutputDebug(const WCHAR* format, ...) {
     va_end(vlArgs);
 
     // 当编写非控制台程序时输出调试信息（属于windows API）
-    OutputDebugString(strBuffer);
+    OutputDebugStringW(strBuffer);
     
 }

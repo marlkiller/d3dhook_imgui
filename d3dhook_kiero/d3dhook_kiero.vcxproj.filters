@@ -22,6 +22,12 @@
     <Filter Include="minhook">
       <UniqueIdentifier>{b822e30b-976b-48d7-8c15-b02d6afff372}</UniqueIdentifier>
     </Filter>
+    <Filter Include="detours.X64">
+      <UniqueIdentifier>{09389933-8628-4284-bbbf-8ba22e33aacb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="detours.X86">
+      <UniqueIdentifier>{688df14b-a8af-430a-ad20-a4e026e2fb86}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -111,6 +117,12 @@
     <ClInclude Include="logger.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_plugin.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="detours.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -188,6 +200,9 @@
     <ClCompile Include="logger.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_plugin.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="minhook\.editorconfig">
@@ -215,5 +230,19 @@
     <ResourceCompile Include="minhook\dll_resources\MinHook.rc">
       <Filter>minhook</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="detours.X64\detours.lib">
+      <Filter>detours.X64</Filter>
+    </Library>
+    <Library Include="detours.X64\syelog.lib">
+      <Filter>detours.X64</Filter>
+    </Library>
+    <Library Include="detours.X86\detours.lib">
+      <Filter>detours.X86</Filter>
+    </Library>
+    <Library Include="detours.X86\syelog.lib">
+      <Filter>detours.X86</Filter>
+    </Library>
   </ItemGroup>
 </Project>

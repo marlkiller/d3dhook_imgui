@@ -1,225 +1,732 @@
-﻿#include "../kiero.h"
-#include "../global.h"
-
-
-#if KIERO_INCLUDE_D3D11
+﻿#include "../global.h"
 
 #include "d3d11_impl.h"
 #include <d3d11.h>
-#include <assert.h>
-
 #include "win32_impl.h"
 
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_impl_win32.h"
 #include "../imgui/imgui_impl_dx11.h"
-#include <iostream>
 #include "../logger.h"
+#include "../imgui_plugin.h"
+#include "../detours.h"
+#include <exception>
+#include <d3dcompiler.h>
+
 #pragma comment(lib, "winmm.lib ")
-
-
-
-typedef long(__stdcall* Present)(IDXGISwapChain*, UINT, UINT);
-static Present oPresent = NULL;
-static WNDPROC OriginalWndProcHandler = nullptr;
+#define SAFE_RELEASE(x) if (x) { x->Release(); x = NULL; }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
-static bool p_open = false;
-static bool greetings = false;
+typedef HRESULT(__stdcall* D3D11PresentHook) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
+typedef void(__stdcall* D3D11DrawIndexedHook) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
 
-int un_init()
-{
-	try
-	{
-		LOG_INFO("un_init");
-		kiero::unbind(8);
-		kiero::shutdown();
-		LOG_INFO("FreeLibrary with {%d}", global::Dll_HWND);
-		FreeLibrary(global::Dll_HWND);
-		
-	}
-	catch (...)
-	{
-		std::exception_ptr p = std::current_exception();
-		LOG_ERROR("ERROR");
-		LOG_ERROR("ERROR : {%s}", p);
-		throw;
-	}
-	return 1;
-}
+typedef void(__stdcall* DrawIndexed) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
+typedef HRESULT(__stdcall* Present) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 
-LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	ImGuiIO& io = ImGui::GetIO();
-	//POINT mPos;
-	//GetCursorPos(&mPos);
-	//ScreenToClient(window, &mPos);
-	//ImGui::GetIO().MousePos.x = mPos.x;
-	//ImGui::GetIO().MousePos.y = mPos.y;
 
-	if (uMsg == WM_KEYUP)
-	{
-		if (wParam == VK_INSERT)
-		{
-			p_open ^= 1;
-			if (p_open)
-				io.MouseDrawCursor = true;
-			else
-				io.MouseDrawCursor = false;
-		}
-	}
 
-	if (p_open)
-	{
-		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-		return true;
-	}
+static DWORD_PTR* pSwapChainVtable = NULL;
+static DWORD_PTR* pContextVTable = NULL;
+static DWORD_PTR* pDeviceVTable = NULL;
 
-	return CallWindowProc(OriginalWndProcHandler, hWnd, uMsg, wParam, lParam);
-}
 
+static D3D11PresentHook oPresent = NULL;
+static DrawIndexed oDrawIndexed = NULL;
+
+static ID3D11Device* pDevice = NULL;
 static ID3D11DeviceContext* pContext = nullptr;
 static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 
 
-static bool draw_fov = false;
-static bool draw_filled_fov = false;
-static int fov_size = 0;
-static float bg_alpha = 1;
+static WNDPROC OriginalWndProcHandler = nullptr;
+
+// wallhack
+static ID3D11DepthStencilState* DepthStencilState_TRUE = NULL; //depth off
+static ID3D11DepthStencilState* DepthStencilState_FALSE = NULL; //depth off
+static ID3D11DepthStencilState* DepthStencilState_ORIG = NULL; //depth on
+
+//shader
+static ID3D11PixelShader* sGreen = NULL;
+static ID3D11PixelShader* sMagenta = NULL;
+
+
+
+static bool p_open = true;
+static bool greetings = true;
+static bool init = false;
+static bool refresh_draw_items = false;
+
+enum DrawItemColumnID
+{
+    // if (Stride == 56 && IndexCount == 912 && veWidth == 28672 && pscWidth == 592)
+    DrawItemColumnID_ID,
+    DrawItemColumnID_Stride,
+    DrawItemColumnID_IndexCount,
+    DrawItemColumnID_Action,
+    DrawItemColumnID_veWidth,
+    DrawItemColumnID_pscWidth
+};
+
+struct DrawItem
+{
+    int         ID;
+    int         Stride;
+    int         IndexCount;
+    int         veWidth;
+    int         pscWidth;
+};
+
+static ImVector<DrawItem> table_items;
+static ImVector<int> selection;
+
+static int id_number = 0;
+static int draw_type = -1;
+
+
+LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    if (p_open)
+    {
+        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+        return true;
+    }
+
+    return CallWindowProc(OriginalWndProcHandler, hWnd, uMsg, wParam, lParam);
+}
+HRESULT GenerateShader(ID3D11Device* pD3DDevice, ID3D11PixelShader** pShader, float r, float g, float b)
+{
+    char szCast[] = "struct VS_OUT"
+        "{"
+        "    float4 Position   : SV_Position;"
+        "    float4 Color    : COLOR0;"
+        "};"
+
+        "float4 main( VS_OUT input ) : SV_Target"
+        "{"
+        "    float4 fake;"
+        "    fake.a = 1.0;"
+        "    fake.r = %f;"
+        "    fake.g = %f;"
+        "    fake.b = %f;"
+        "    return fake;"
+        "}";
+    ID3D10Blob* pBlob;
+    char szPixelShader[1000];
+
+    sprintf(szPixelShader, szCast, r, g, b);
+
+    HRESULT hr = D3DCompile(szPixelShader, sizeof(szPixelShader), "shader", NULL, NULL, "main", "ps_4_0", NULL, NULL, &pBlob, NULL);
+
+    if (FAILED(hr))
+        return hr;
+
+    hr = pD3DDevice->CreatePixelShader((DWORD*)pBlob->GetBufferPointer(), pBlob->GetBufferSize(), NULL, pShader);
+
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
+}
+
+
+
+static int radio_stride = -1;
+static int radio_inidex = -1;
+static int radio_width = -1;
+static int radio_psc_width = -1;
+static int step_type = 1;
+
+void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
+{
+
+    //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
+
+
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
+    {
+        radio_inidex++;
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
+    {
+        radio_inidex--;
+    }
+
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x32) & 1))
+    {
+        radio_width++;
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x32) & 1))
+    {
+        radio_width--;
+    }
+
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    {
+        radio_psc_width++;
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    {
+        radio_psc_width--;
+    }
+
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
+    {
+        radio_stride++;
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
+    {
+        radio_stride--;
+    }
+
+    ID3D11Buffer* veBuffer;
+    UINT veWidth;
+    UINT Stride;
+    UINT veBufferOffset;
+    D3D11_BUFFER_DESC veDesc;
+
+    //get models
+    pContext->IAGetVertexBuffers(0, 1, &veBuffer, &Stride, &veBufferOffset);
+    if (veBuffer) {
+        veBuffer->GetDesc(&veDesc);
+        veWidth = veDesc.ByteWidth;
+    }
+    if (NULL != veBuffer) {
+        veBuffer->Release();
+        veBuffer = NULL;
+    }
+
+    ID3D11Buffer* pscBuffer;
+    UINT pscWidth;
+    D3D11_BUFFER_DESC pscdesc;
+
+    //get pscdesc.ByteWidth
+    pContext->PSGetConstantBuffers(0, 1, &pscBuffer);
+    if (pscBuffer) {
+        pscBuffer->GetDesc(&pscdesc);
+        pscWidth = pscdesc.ByteWidth;
+    }
+    if (NULL != pscBuffer) {
+        pscBuffer->Release();
+        pscBuffer = NULL;
+    }
+
+
+    if (refresh_draw_items)
+    {
+        bool exist = false;
+        ImVector<DrawItem>::iterator it;
+        for (it = table_items.begin(); it != table_items.end(); it++)
+            if (it->Stride == Stride && it->IndexCount == IndexCount && it->veWidth == veWidth && it->pscWidth == pscWidth)
+            {
+                exist = true;
+                continue;
+            }
+        if (!exist) {
+            id_number = id_number + 1;
+            DrawItem item;
+            item.ID = id_number;
+            item.Stride = Stride;
+            item.IndexCount = IndexCount;
+            item.veWidth = veWidth;
+            item.pscWidth = pscWidth;
+            table_items.push_back(item);
+
+        }
+    }
+
+    // 
+    //
+    radio_stride = 56;
+    radio_inidex = -1;
+
+    // 
+    //
+    if (radio_stride!=-1 && draw_type != -1)
+    {
+        // 1. >> first make target obj green , hide others
+        if (radio_stride == Stride) {
+
+            OUTPUT_DEBUG(L"1.first draw target, find Stride >>(%d,%d) - ( [%d],[%d],%d,%d )\n",
+                //table_select_item->Stride ,table_select_item->IndexCount , table_select_item->veWidth , table_select_item->pscWidth,
+                radio_stride, draw_type,
+                Stride, IndexCount, veWidth, pscWidth);
+
+
+            //2. << change the index, make obj if stil green
+            if (radio_inidex > -1)
+            {
+                if (
+                    !(((step_type == 1) && ((radio_inidex == IndexCount / 10))) ||
+                      ((step_type == 2) && (radio_inidex == IndexCount / 100)) ||
+                        ((step_type == 3) && (radio_inidex == IndexCount / 1000)))
+                    ) {
+
+                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                }
+                else
+                {
+                    OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,%d],%d,%d) --> (IndexCount==%d && veWidth==%d && pscWidth==%d)||", Stride, IndexCount, veWidth, pscWidth);
+                    
+                        
+                }
+            }
+
+            //3. << change the radio_width, make obj if stil green
+            if (radio_width > -1)
+            {
+                if (
+                    !(((step_type == 1) && ((radio_width == IndexCount / 100))) ||
+                        ((step_type == 2) && (radio_width == IndexCount / 1000)) ||
+                        ((step_type == 3) && (radio_width == IndexCount / 10000)))
+                    ) {
+
+                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                }
+                else
+                {
+                    OUTPUT_DEBUG(L"3. filter radio_width >> ([%d,%d,%d],%d)", Stride, IndexCount, veWidth, pscWidth);
+
+                }
+            }
+
+            //4. << change the radio_width, make obj if stil green
+            if (radio_psc_width > -1)
+            {
+                if (
+                    !(((step_type == 1) && ((radio_psc_width == IndexCount / 1))) ||
+                        ((step_type == 2) && (radio_psc_width == IndexCount / 10)) ||
+                        ((step_type == 3) && (radio_psc_width == IndexCount / 100)))
+                    ) {
+
+                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                }
+                else
+                {
+                    OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,%d])", Stride, IndexCount, veWidth, pscWidth);
+
+                }
+            }
+
+            if (draw_type == 1) {
+                //get orig
+                pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
+                //set off
+                pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
+                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+                //restore orig
+                pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
+                //release
+                SAFE_RELEASE(DepthStencilState_ORIG); //release
+            }
+            else if (draw_type == 2)
+            {
+                pContext->PSSetShader(sGreen, NULL, NULL);
+                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+                return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+            }
+            else if (draw_type == 3)
+            {
+                return; //delete selected texture
+            }
+            return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+
+        }
+        else {
+            return;
+        }
+    }    
+    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+}
+
+
 
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-	static bool init = false;
-	
-	try {
-		if (!init)
-		{
-			LOG_INFO("imgui first init {%d}", init)
-				greetings = true;
-			DXGI_SWAP_CHAIN_DESC desc;
-			pSwapChain->GetDesc(&desc);
-			ID3D11Device* pDevice;
-			pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
 
-			pDevice->GetImmediateContext(&pContext);
+    try {
+        if (!init)
+        {
+            LOG_INFO("imgui first init {%d}", init)
+                //greetings = true;
+                DXGI_SWAP_CHAIN_DESC desc;
+            pSwapChain->GetDesc(&desc);
+            ID3D11Device* pDevice;
+            pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
 
-			//impl::win32::init(desc.OutputWindow);
-			global::GAME_HWND = desc.OutputWindow;
-			ImGui::CreateContext();
-			ImGui_ImplWin32_Init(desc.OutputWindow);
-			ImGui_ImplDX11_Init(pDevice, pContext);
-			ID3D11Texture2D* pBackBuffer;
-			pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-			pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-			OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
-			LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, OriginalWndProcHandler);
-			init = true;
-		}
+            pDevice->GetImmediateContext(&pContext);
+
+            //impl::win32::init(desc.OutputWindow);
+            global::GAME_HWND = desc.OutputWindow;
+            ImGui::CreateContext();
+            ImGui_ImplWin32_Init(desc.OutputWindow);
+            ImGui_ImplDX11_Init(pDevice, pContext);
+            ID3D11Texture2D* pBackBuffer;
+            pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+            pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
+            OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
+            LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, OriginalWndProcHandler);
+
+            // Create depthstencil state
+            D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+            depthStencilDesc.DepthEnable = TRUE;
+            depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+            depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+            depthStencilDesc.StencilEnable = FALSE;
+            depthStencilDesc.StencilReadMask = 0xFF;
+            depthStencilDesc.StencilWriteMask = 0xFF;
+            // Stencil operations if pixel is front-facing
+            depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+            depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+            // Stencil operations if pixel is back-facing
+            depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+            depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+            pDevice->CreateDepthStencilState(&depthStencilDesc, &DepthStencilState_FALSE);
+
+            if (!sGreen) {
+                GenerateShader(pDevice, &sGreen, 0.0f, 1.0f, 0.0f); //green
+            }
 
 
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
+            if (!sMagenta) {
+                GenerateShader(pDevice, &sMagenta, 1.0f, 0.0f, 1.0f); //magenta
+            }
+            /*DrawItem item;
+            item.Stride = 1;
+            item.IndexCount = 2;
+            item.veWidth = 3;
+            item.pscWidth= 4;
+            table_items.push_back(item);*/
 
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-		// greetings
-		if (greetings)
-		{
-			float sub_win_width = 300;
-			float sub_win_height = 40;
-			ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
-			ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2)));
+            init = true;
+        }
 
-			ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
-			ImGui::Text("Wallhack loaded, press INSERT for menu");
-			ImGui::End();
 
-			static DWORD lastTime = timeGetTime();
-			DWORD timePassed = timeGetTime() - lastTime;
-			if (timePassed > 6000)
-			{
-				LOG_INFO("greetings init timePassed {%d}", timePassed);
-				greetings = false;
-				lastTime = timeGetTime();
-			}
-		}
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
 
-		if (p_open)
-			ImGui::GetIO().MouseDrawCursor = 1;
-		else
-			ImGui::GetIO().MouseDrawCursor = 0;
 
-		if (p_open)
-		{
-			ImGui::SetNextWindowBgAlpha(bg_alpha);
-			ImGui::Begin("My Windows ", &p_open);
-			ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        static bool draw_fov = false;
+        static bool draw_filled_fov = false;
+        static int fov_size = 0;
+        static float bg_alpha = 1;
 
-			if (ImGui::Checkbox("DrawFOV", &draw_fov))
-			{
-				if (draw_fov && !fov_size)
-				{
-					fov_size = 100;
-				}
-			}
-			ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
 
-			ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d");
-			ImGui::SliderFloat("bg_alpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
+        // greetings
+        if (greetings)
+        {
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            float sub_win_width = 300;
+            float sub_win_height = 40;
+            ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2)));
 
-			if (ImGui::Button("Detach"))
-			{
-				ImGui::End();
-				ImGui::EndFrame();
-				ImGui::Render();
-				pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-				ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
+            ImGui::Text("Plugin loaded, press INSERT for menu");
+            ImGui::End();
 
-				ImGui_ImplDX11_Shutdown();
-				ImGui_ImplWin32_Shutdown();
-				ImGui::DestroyContext();
+            static DWORD lastTime = timeGetTime();
+            DWORD timePassed = timeGetTime() - lastTime;
+            if (timePassed > 6000)
+            {
+                LOG_INFO("greetings init timePassed {%d}", timePassed);
+                greetings = false;
+                lastTime = timeGetTime();
+            }
+        }
 
-				SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
-				LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
-				CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)un_init, NULL, 0, NULL);
-				return oPresent(pSwapChain, SyncInterval, Flags);
-			}
-			ImGui::End();
-		}
+        if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.MouseDrawCursor = p_open;
 
-		const auto draw = ImGui::GetBackgroundDrawList();
-		static const auto size = ImGui::GetIO().DisplaySize;
-		static const auto center = ImVec2(size.x / 2, size.y / 2);
+        if (p_open)
+        {
+            ImGui::SetNextWindowBgAlpha(bg_alpha);
+            ImGui::Begin("My Windows ");
+            ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            if (ImGui::Checkbox("DrawFOV", &draw_fov))
+            {
+                if (draw_fov && !fov_size)
+                {
+                    fov_size = 100;
+                }
+            }
+            ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
 
-		if (draw_fov)
-			draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
+            ImGui::SliderInt("fov_size", &fov_size, 0, 200, "fov_size:%d");
+            ImGui::SliderFloat("bg_alpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
 
-		if (draw_filled_fov)
-			draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
+            ImGui::RadioButton("None", &draw_type, -1); ImGui::SameLine();
+            ImGui::RadioButton("draw_Z", &draw_type, 1); ImGui::SameLine();
+            ImGui::RadioButton("draw_color", &draw_type, 2); ImGui::SameLine();
+            ImGui::RadioButton("draw_hide", &draw_type, 3);
 
-		ImGui::EndFrame();
-		ImGui::Render();
-		pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            ImGui::NewLine();
+            ImGui::SliderInt("Step Mode", &step_type, 1, 3);
+            ImGui::SameLine();
+            if (step_type == 1) {
+                ImGui::Text("Modelfind Mode 1 (Step 10)");
+            }
+            else if (step_type == 2)
+            {
+                ImGui::Text("Modelfind Mode 1 (Step 100)");
+            }
+            else if (step_type == 3)
+            {
+                ImGui::Text("Modelfind Mode 1 (Step 1000)");
+            }
 
-		OUTPUT_DEBUG(L"init {%d},greetings {%d},p_open {%d}, draw_fov {%d},draw_filled_fov {%d}\n", init, greetings, p_open, draw_fov, draw_filled_fov);
-	}
-	catch (...) {
-		std::exception_ptr p = std::current_exception();
-		LOG_ERROR("ERROR");
-		LOG_ERROR("ERROR : {%s}", p);
-		throw;
-	}
-	return oPresent(pSwapChain, SyncInterval, Flags);
+            ImGui::SliderInt("radio_stride", &radio_stride, -1, 100, "Stride:%d");
+            ImGui::SliderInt("radio_inidex", &radio_inidex, -1, 100, "IndexCount:%d");
+            ImGui::SliderInt("radio_width", &radio_width, -1, 100, "veWidth:%d");
+            ImGui::SliderInt("radio_psc_width", &radio_psc_width, -1, 100, "pscWidth:%d");
+
+            ImGui::Checkbox("Refresh Draw Data", &refresh_draw_items);
+            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
+            // Update item list if we changed the number of items
+           
+            if (ImGui::BeginTable("table_advanced", 7, flags, ImVec2(0, 0), 0.0f))
+            {
+                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
+                ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_Stride);
+                ImGui::TableSetupColumn("IndexCount", ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_IndexCount);
+                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_Action);
+                ImGui::TableSetupColumn("veWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_veWidth);
+                ImGui::TableSetupColumn("pscWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_pscWidth);
+                ImGui::TableSetupColumn("Hidden", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_NoSort);
+                ImGui::TableSetupScrollFreeze(1, 1);
+                ImGui::TableHeadersRow();
+                ImGui::PushButtonRepeat(true);
+#if 1
+                // Demonstrate using clipper for large vertical lists
+                ImGuiListClipper clipper;
+                clipper.Begin(table_items.Size);
+                while (clipper.Step())
+                {
+                    for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
+#else
+                    {
+                        for (int row_n = 0; row_n < items.Size; row_n++)
+#endif
+                        {
+                            DrawItem* item = &table_items[row_n];
+                            //if (!filter.PassFilter(item->Name))
+                            //    continue;
+                            const bool item_is_selected = selection.contains(item->ID);
+                            ImGui::PushID(item->ID);
+                            ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
+
+                            // For the demo purpose we can select among different type of items submitted in the first column
+                            ImGui::TableSetColumnIndex(0);
+                            char label[32];
+                            sprintf(label, "%d", item->ID);
+                            ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                            if (ImGui::Selectable(label, item_is_selected, selectable_flags, ImVec2(0, 0)))
+                            {
+                                selection.clear();
+                                selection.push_back(item->ID);
+                            }
+
+                            if (ImGui::TableSetColumnIndex(1))
+                                ImGui::Text("%d", item->Stride);
+
+                            if (ImGui::TableSetColumnIndex(2))
+                                ImGui::Text("%d", item->IndexCount);
+
+                            if (ImGui::TableSetColumnIndex(3))
+                            {
+                                if (ImGui::SmallButton("SELECT")) { }
+                                ImGui::SameLine();
+                                if (ImGui::SmallButton("CLEAN")) { }
+                            }
+
+                            if (ImGui::TableSetColumnIndex(4))
+                                ImGui::Text("%d", item->veWidth);
+
+                            if (ImGui::TableSetColumnIndex(5))
+                                ImGui::Text("%d", item->pscWidth);
+
+
+                            if (ImGui::TableSetColumnIndex(6))
+                                ImGui::Text("");
+
+                            ImGui::PopID();
+                        }
+                    }
+                    ImGui::PopButtonRepeat();
+                    ImGui::EndTable();
+                }
+
+            if (ImGui::Button("Detach"))
+            {
+                ImGui::End();
+                ImGui::EndFrame();
+                ImGui::Render();
+                pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+                ImGui_ImplDX11_Shutdown();
+                ImGui_ImplWin32_Shutdown();
+                ImGui::DestroyContext();
+
+                SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
+                LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
+                {
+                    try
+                    {
+                        DetourTransactionBegin();
+                        DetourUpdateThread(GetCurrentThread());
+                        DetourDetach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
+                        DetourDetach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
+                        DetourTransactionCommit();
+                        FreeLibrary(global::Dll_HWND);
+
+                    }
+                    catch (...)
+                    {
+                        std::exception_ptr p = std::current_exception();
+                        LOG_ERROR("ERROR");
+                        LOG_ERROR("ERROR : {%s}", p);
+                        throw;
+                    }
+                }
+                return oPresent(pSwapChain, SyncInterval, Flags);
+            }
+            ImGui::End();
+        }
+
+        const auto draw = ImGui::GetBackgroundDrawList();
+        static const auto size = ImGui::GetIO().DisplaySize;
+        static const auto center = ImVec2(size.x / 2, size.y / 2);
+
+        if (draw_fov)
+            draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
+
+        if (draw_filled_fov)
+            draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
+
+        ImGui::EndFrame();
+        ImGui::Render();
+        pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+        //OUTPUT_DEBUG(L"init {%d},greetings {%d},p_open {%d}, draw_fov {%d},draw_filled_fov {%d}\n", init, greetings, p_open, draw_fov, draw_filled_fov);
+    }
+    catch (...) {
+        std::exception_ptr p = std::current_exception();
+        LOG_ERROR("ERROR");
+        LOG_ERROR("ERROR : {%s}", p);
+        throw;
+    }
+    return oPresent(pSwapChain, SyncInterval, Flags);
 }
+
+
+
 
 void impl::d3d11::init()
 {
-	kiero::Status::Enum status = kiero::bind(8, (void**)&oPresent, hkPresent11);
-	LOG_INFO("impl::d3d11::init {%d}", status);
+
+    HMODULE hDXGIDLL = 0;
+    do
+    {
+        hDXGIDLL = GetModuleHandle("dxgi.dll");
+        Sleep(4000);
+    } while (!hDXGIDLL);
+    Sleep(100);
+
+
+    IDXGISwapChain* pSwapChain;
+
+    WNDCLASSEXA wc = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "DX", NULL };
+    RegisterClassExA(&wc);
+    HWND hWnd = CreateWindowA("DX", NULL, WS_OVERLAPPEDWINDOW, 100, 100, 300, 300, NULL, NULL, wc.hInstance, NULL);
+
+    D3D_FEATURE_LEVEL requestedLevels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
+    D3D_FEATURE_LEVEL obtainedLevel;
+    ID3D11Device* d3dDevice = nullptr;
+    ID3D11DeviceContext* d3dContext = nullptr;
+
+    DXGI_SWAP_CHAIN_DESC scd;
+    ZeroMemory(&scd, sizeof(scd));
+    scd.BufferCount = 1;
+    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    scd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+    scd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+
+    scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    scd.OutputWindow = hWnd;
+    scd.SampleDesc.Count = 1;
+    scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    scd.Windowed = ((GetWindowLongPtr(hWnd, GWL_STYLE) & WS_POPUP) != 0) ? false : true;
+
+    // LibOVR 0.4.3 requires that the width and height for the backbuffer is set even if
+    // you use windowed mode, despite being optional according to the D3D11 documentation.
+    scd.BufferDesc.Width = 1;
+    scd.BufferDesc.Height = 1;
+    scd.BufferDesc.RefreshRate.Numerator = 0;
+    scd.BufferDesc.RefreshRate.Denominator = 1;
+
+    if (FAILED(D3D11CreateDeviceAndSwapChain(
+        nullptr,
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        0,
+        requestedLevels,
+        sizeof(requestedLevels) / sizeof(D3D_FEATURE_LEVEL),
+        D3D11_SDK_VERSION,
+        &scd,
+        &pSwapChain,
+        &pDevice,
+        &obtainedLevel,
+        &pContext)))
+    {
+        MessageBox(hWnd, "Failed to create directX device and swapchain!", "Error", MB_ICONERROR);
+        return;
+    }
+
+
+    pSwapChainVtable = (DWORD_PTR*)pSwapChain;
+    pSwapChainVtable = (DWORD_PTR*)pSwapChainVtable[0];
+
+    pContextVTable = (DWORD_PTR*)pContext;
+    pContextVTable = (DWORD_PTR*)pContextVTable[0];
+
+    pDeviceVTable = (DWORD_PTR*)pDevice;
+    pDeviceVTable = (DWORD_PTR*)pDeviceVTable[0];
+
+    oDrawIndexed = (D3D11DrawIndexedHook)(DWORD_PTR*)pContextVTable[12];
+    oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
+
+   
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
+    DetourAttach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
+    DetourTransactionCommit();
+
+    DWORD dwOld;
+    VirtualProtect(oPresent, 2, PAGE_EXECUTE_READWRITE, &dwOld);
+
+    /*while (true) {
+        Sleep(10);
+    }*/
+
+    Sleep(5000);
+
+    pDevice->Release();
+    pContext->Release();
+    pSwapChain->Release();
+
 }
 
-#endif // KIERO_INCLUDE_D3D11
+

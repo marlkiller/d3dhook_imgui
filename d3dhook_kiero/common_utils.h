@@ -3,15 +3,21 @@
 #include <minwindef.h>
 
 
-class CommonUtils {
-public:
-	CommonUtils();
-	~CommonUtils();
+enum Enum
+{
+    None,
 
+    D3D9,
+    D3D10,
+    D3D11,
+    D3D12,
 
-private:
-	
+    OpenGL,
+    Vulkan,
 
-
-public:
+    Auto
 };
+
+namespace common_utils {
+    Enum GetDirectVersion();
+}
