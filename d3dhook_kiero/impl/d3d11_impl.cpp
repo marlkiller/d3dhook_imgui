@@ -64,6 +64,7 @@ enum DrawItemColumnID
     DrawItemColumnID_ID,
     DrawItemColumnID_Stride,
     DrawItemColumnID_IndexCount,
+    DrawItemColumnID_inWidth,
     DrawItemColumnID_Action,
     DrawItemColumnID_veWidth,
     DrawItemColumnID_pscWidth
@@ -76,6 +77,7 @@ struct DrawItem
     int         IndexCount;
     int         veWidth;
     int         pscWidth;
+    int         inWidth;
 };
 
 static ImVector<DrawItem> table_items;
@@ -138,6 +140,9 @@ static int radio_width = -1;
 static int radio_psc_width = -1;
 static int step_type = 1;
 
+static DrawItem current_item;
+static int current_count = -1;
+
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
 
@@ -171,15 +176,38 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         radio_psc_width--;
     }
 
-    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
+    /*if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
     {
         radio_stride++;
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
     {
         radio_stride--;
-    }
+    }*/
 
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
+    {
+        //current_count
+        if (! (current_count + 1 >= table_items.size()))
+        {
+            current_count = current_count + 1;
+            current_item = table_items[current_count];
+            OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
+        }
+       
+
+
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
+    {
+        if (current_count>0)
+        {
+            current_count = current_count - 1;
+            current_item = table_items[current_count];
+            OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
+        }
+       
+    }
     ID3D11Buffer* veBuffer;
     UINT veWidth;
     UINT Stride;
@@ -196,6 +224,21 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         veBuffer->Release();
         veBuffer = NULL;
     }
+
+    ID3D11Buffer* inBuffer;
+    DXGI_FORMAT inFormat;
+    UINT        inOffset;
+    D3D11_BUFFER_DESC indesc;
+    UINT inWidth; // remove??
+
+    // get indesc.ByteWidth
+    pContext->IAGetIndexBuffer(&inBuffer, &inFormat, &inOffset);
+    if (inBuffer) {
+        inBuffer->GetDesc(&indesc);
+        inWidth = indesc.ByteWidth;
+    }
+        
+    if (inBuffer != NULL) { inBuffer->Release(); inBuffer = NULL; }
 
     ID3D11Buffer* pscBuffer;
     UINT pscWidth;
@@ -218,7 +261,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         bool exist = false;
         ImVector<DrawItem>::iterator it;
         for (it = table_items.begin(); it != table_items.end(); it++)
-            if (it->Stride == Stride && it->IndexCount == IndexCount && it->veWidth == veWidth && it->pscWidth == pscWidth)
+            if (it->Stride == Stride && it->IndexCount == IndexCount && it->veWidth == veWidth && it->pscWidth == pscWidth && it->inWidth == inWidth)
             {
                 exist = true;
                 continue;
@@ -228,6 +271,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             DrawItem item;
             item.ID = id_number;
             item.Stride = Stride;
+            item.inWidth = inWidth;
             item.IndexCount = IndexCount;
             item.veWidth = veWidth;
             item.pscWidth = pscWidth;
@@ -236,22 +280,14 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         }
     }
 
-    // 
-    //
-    radio_stride = 56;
-    radio_inidex = -1;
-
-    // 
-    //
-    if (radio_stride != -1 && draw_type != -1)
+    if ((radio_stride != -1 && draw_type != -1) || current_count >= 0)
     {
         // 1. >> first make target obj green , hide others
-        if (radio_stride == Stride) {
-
-            OUTPUT_DEBUG(L"1.first draw target, find Stride >>(%d,%d) - ( [%d],[%d],%d,%d )\n",
-                //table_select_item->Stride ,table_select_item->IndexCount , table_select_item->veWidth , table_select_item->pscWidth,
+        //if (radio_stride == Stride) {
+        if ( current_item.Stride == Stride && current_item.IndexCount == IndexCount && current_item.veWidth == veWidth && current_item.pscWidth == pscWidth && current_item.inWidth == inWidth) {
+            /*OUTPUT_DEBUG(L"1.first draw target, find Stride >>(%d,%d) - ( [%d],[%d],%d,%d )\n",
                 radio_stride, draw_type,
-                Stride, IndexCount, veWidth, pscWidth);
+                Stride, IndexCount, veWidth, pscWidth);*/
 
 
             //2. << change the index, make obj if stil green
@@ -309,16 +345,31 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
                 }
             }
 
-            if (draw_type == 1) {
-                //get orig
-                pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
-                //set off
-                pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
+            if (draw_type == 1 || draw_type == 0) {
+
+                if (draw_type==0)
+                {
+                    //get orig
+                    pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
+                    //set off
+                    pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
+
+                }
+                if (draw_type == 1) {
+                    pContext->PSSetShader(sGreen, NULL, NULL); // color1
+                }
                 oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-                //restore orig
-                pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
-                //release
-                SAFE_RELEASE(DepthStencilState_ORIG); //release
+                if (draw_type == 1) {
+                    pContext->PSSetShader(sMagenta, NULL, NULL);// color2
+                }
+
+                if (draw_type == 0) {
+                    //restore orig
+                    pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
+                    //release
+                    SAFE_RELEASE(DepthStencilState_ORIG); //release
+                }
+              
             }
             else if (draw_type == 2)
             {
@@ -334,7 +385,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
 
         }
         else {
-            return;
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);;
         }
     }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
@@ -464,7 +515,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             ImGui::SliderFloat("bg_alpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
 
             ImGui::RadioButton("None", &draw_type, -1); ImGui::SameLine();
-            ImGui::RadioButton("draw_Z", &draw_type, 1); ImGui::SameLine();
+            ImGui::RadioButton("draw_Z", &draw_type, 0); ImGui::SameLine();
+            ImGui::RadioButton("draw_Z&draw_color", &draw_type, 1); ImGui::SameLine();
             ImGui::RadioButton("draw_color", &draw_type, 2); ImGui::SameLine();
             ImGui::RadioButton("draw_hide", &draw_type, 3);
 
@@ -492,11 +544,12 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
             // Update item list if we changed the number of items
 
-            if (ImGui::BeginTable("table_advanced", 7, flags, ImVec2(0, 0), 0.0f))
+            if (ImGui::BeginTable("table_advanced", 8, flags, ImVec2(0, 0), 0.0f))
             {
                 ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
                 ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_Stride);
                 ImGui::TableSetupColumn("IndexCount", ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_IndexCount);
+                ImGui::TableSetupColumn("inWidth", ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_inWidth);
                 ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_Action);
                 ImGui::TableSetupColumn("veWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_veWidth);
                 ImGui::TableSetupColumn("pscWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_pscWidth);
@@ -541,20 +594,23 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                                 ImGui::Text("%d", item->IndexCount);
 
                             if (ImGui::TableSetColumnIndex(3))
+                                ImGui::Text("%d", item->inWidth);
+
+                            if (ImGui::TableSetColumnIndex(4))
                             {
                                 if (ImGui::SmallButton("SELECT")) {}
                                 ImGui::SameLine();
                                 if (ImGui::SmallButton("CLEAN")) {}
                             }
 
-                            if (ImGui::TableSetColumnIndex(4))
+                            if (ImGui::TableSetColumnIndex(5))
                                 ImGui::Text("%d", item->veWidth);
 
-                            if (ImGui::TableSetColumnIndex(5))
+                            if (ImGui::TableSetColumnIndex(6))
                                 ImGui::Text("%d", item->pscWidth);
 
 
-                            if (ImGui::TableSetColumnIndex(6))
+                            if (ImGui::TableSetColumnIndex(7))
                                 ImGui::Text("");
 
                             ImGui::PopID();
