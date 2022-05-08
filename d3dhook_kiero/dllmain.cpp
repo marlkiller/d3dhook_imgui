@@ -43,43 +43,43 @@ using namespace std;
 #define CONSOLE_LOGGING false
 #endif 
 
- 
+
 int mainThread()
 {
-   
+
     Enum version = common_utils::GetDirectVersion();
 
-    LOG_INFO("Get directX version is {%d}",version);
+    LOG_INFO("Get directX version is {%d}", version);
     switch (version)
     {
-        case None:
-            break;
-        case D3D9:
-            //impl::d3d9::init();
-            break;
-        case D3D10:
-            //impl::d3d10::init();
-            break;
-        case D3D11:
-            impl::d3d11::init();
-            break;
-        case D3D12:
-            break;
-        case OpenGL:
-            break;
-        case Vulkan:
-            break;
-        case Auto:
-            break;
-        default:
-            break;
+    case None:
+        break;
+    case D3D9:
+        //impl::d3d9::init();
+        break;
+    case D3D10:
+        //impl::d3d10::init();
+        break;
+    case D3D11:
+        impl::d3d11::init();
+        break;
+    case D3D12:
+        break;
+    case OpenGL:
+        break;
+    case Vulkan:
+        break;
+    case Auto:
+        break;
+    default:
+        break;
     }
     return 0;
 }
 BOOL APIENTRY DllMain(HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+    DWORD  ul_reason_for_call,
+    LPVOID lpReserved
+)
 {
 
     switch (ul_reason_for_call)
@@ -89,11 +89,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
         LOG_INFO("DLL_PROCESS_ATTACH {%d},{%d},{%d}", hModule, ul_reason_for_call, lpReserved)
 
-        if (CONSOLE_LOGGING)
-        {
-            OPEN_COONSOLE();
-        }
-        LOG_INFO("Platform {%s},CONSOLE_LOGGING {%d}", IS_X64?"x64":"x86", CONSOLE_LOGGING);
+            if (CONSOLE_LOGGING)
+            {
+                OPEN_COONSOLE();
+            }
+        LOG_INFO("Platform {%s},CONSOLE_LOGGING {%d}", IS_X64 ? "x64" : "x86", CONSOLE_LOGGING);
         global::Dll_HWND = hModule;
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)mainThread, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:

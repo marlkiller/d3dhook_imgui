@@ -243,7 +243,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
 
     // 
     //
-    if (radio_stride!=-1 && draw_type != -1)
+    if (radio_stride != -1 && draw_type != -1)
     {
         // 1. >> first make target obj green , hide others
         if (radio_stride == Stride) {
@@ -259,7 +259,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             {
                 if (
                     !(((step_type == 1) && ((radio_inidex == IndexCount / 10))) ||
-                      ((step_type == 2) && (radio_inidex == IndexCount / 100)) ||
+                        ((step_type == 2) && (radio_inidex == IndexCount / 100)) ||
                         ((step_type == 3) && (radio_inidex == IndexCount / 1000)))
                     ) {
 
@@ -268,8 +268,8 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
                 else
                 {
                     OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,%d],%d,%d) --> (IndexCount==%d && veWidth==%d && pscWidth==%d)||", Stride, IndexCount, veWidth, pscWidth);
-                    
-                        
+
+
                 }
             }
 
@@ -336,7 +336,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         else {
             return;
         }
-    }    
+    }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
 }
 
@@ -491,7 +491,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             ImGui::Checkbox("Refresh Draw Data", &refresh_draw_items);
             static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
             // Update item list if we changed the number of items
-           
+
             if (ImGui::BeginTable("table_advanced", 7, flags, ImVec2(0, 0), 0.0f))
             {
                 ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
@@ -542,9 +542,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
                             if (ImGui::TableSetColumnIndex(3))
                             {
-                                if (ImGui::SmallButton("SELECT")) { }
+                                if (ImGui::SmallButton("SELECT")) {}
                                 ImGui::SameLine();
-                                if (ImGui::SmallButton("CLEAN")) { }
+                                if (ImGui::SmallButton("CLEAN")) {}
                             }
 
                             if (ImGui::TableSetColumnIndex(4))
@@ -600,7 +600,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                 return oPresent(pSwapChain, SyncInterval, Flags);
             }
             ImGui::End();
-        }
+            }
 
         const auto draw = ImGui::GetBackgroundDrawList();
         static const auto size = ImGui::GetIO().DisplaySize;
@@ -618,7 +618,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
         //OUTPUT_DEBUG(L"init {%d},greetings {%d},p_open {%d}, draw_fov {%d},draw_filled_fov {%d}\n", init, greetings, p_open, draw_fov, draw_filled_fov);
-    }
+        }
     catch (...) {
         std::exception_ptr p = std::current_exception();
         LOG_ERROR("ERROR");
@@ -626,7 +626,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         throw;
     }
     return oPresent(pSwapChain, SyncInterval, Flags);
-}
+    }
 
 
 
@@ -706,7 +706,7 @@ void impl::d3d11::init()
     oDrawIndexed = (D3D11DrawIndexedHook)(DWORD_PTR*)pContextVTable[12];
     oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
 
-   
+
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
