@@ -12,9 +12,11 @@
 #include "../detours.h"
 #include <exception>
 #include <d3dcompiler.h>
+#include <string>
 
 #pragma comment(lib, "winmm.lib ")
 #define SAFE_RELEASE(x) if (x) { x->Release(); x = NULL; }
+#define DEPTH_BIAS_D32_FLOAT(d) (d/(1/pow(2,23)))
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -51,7 +53,10 @@ static ID3D11DepthStencilState* DepthStencilState_ORIG = NULL; //depth on
 static ID3D11PixelShader* sGreen = NULL;
 static ID3D11PixelShader* sMagenta = NULL;
 
-
+//wh
+ID3D11RasterizerState* DEPTHBIASState_FALSE;
+ID3D11RasterizerState* DEPTHBIASState_TRUE;
+ID3D11RasterizerState* DEPTHBIASState_ORIG;
 
 static bool p_open = true;
 static bool greetings = true;
@@ -142,10 +147,11 @@ static int step_type = 1;
 
 static DrawItem current_item;
 static int current_count = -1;
+const char* input_val = "";
 
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
-
+    bool matched = false;
     //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
     // change the stride TODO out log？
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
@@ -192,6 +198,12 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             current_count = current_count + 1;
             current_item = table_items[current_count];
             OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
+
+            char result_str[100];
+            std::string result_s;
+            sprintf(result_str, "%d: %d,%d,%d,%d", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth);
+            result_s = result_str;
+            input_val = result_s.c_str();
         }
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
@@ -201,6 +213,12 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             current_count = current_count - 1;
             current_item = table_items[current_count];
             OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
+
+            char result_str[100];
+            std::string result_s;
+            sprintf(result_str, "%d: %d,%d,%d,%d", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth);
+            result_s = result_str;
+            input_val = result_s.c_str();
         }
        
     }
@@ -276,111 +294,119 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         }
     }
 
-    if ((radio_stride != -1 && draw_type != -1) || current_count >= 0)
+    if (current_count >= 0)
+    {
+        if (current_item.Stride == Stride && current_item.IndexCount == IndexCount && current_item.veWidth == veWidth && current_item.pscWidth == pscWidth && current_item.inWidth == inWidth)
+        {
+            matched = true;
+        }
+    }
+
+    if ((draw_type != -1 && radio_stride == Stride))
     {
         // 1. >> first make target obj green , hide others
         //if (radio_stride == Stride) {
-        if ( current_item.Stride == Stride && current_item.IndexCount == IndexCount && current_item.veWidth == veWidth && current_item.pscWidth == pscWidth && current_item.inWidth == inWidth) {
-            /*OUTPUT_DEBUG(L"1.first draw target, find Stride >>(%d,%d) - ( [%d],[%d],%d,%d )\n",
-                radio_stride, draw_type,
-                Stride, IndexCount, veWidth, pscWidth);*/
 
+        matched = true;
+        //2. << change the index, make obj if stil green
+        if (radio_inidex > -1)
+        {
+            if (
+                !(((step_type == 1) && ((radio_inidex == IndexCount / 10))) ||
+                    ((step_type == 2) && (radio_inidex == IndexCount / 100)) ||
+                    ((step_type == 3) && (radio_inidex == IndexCount / 1000)))
+                ) {
 
-            //2. << change the index, make obj if stil green
-            if (radio_inidex > -1)
-            {
-                if (
-                    !(((step_type == 1) && ((radio_inidex == IndexCount / 10))) ||
-                        ((step_type == 2) && (radio_inidex == IndexCount / 100)) ||
-                        ((step_type == 3) && (radio_inidex == IndexCount / 1000)))
-                    ) {
-
-                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
-                }
-                else
-                {
-                    OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,%d],%d,%d) --> (IndexCount==%d && veWidth==%d && pscWidth==%d)||", Stride, IndexCount, veWidth, pscWidth);
-                }
-            }
-
-            //3. << change the radio_width, make obj if stil green
-            if (radio_width > -1)
-            {
-                if (
-                    !(((step_type == 1) && ((radio_width == IndexCount / 100))) ||
-                        ((step_type == 2) && (radio_width == IndexCount / 1000)) ||
-                        ((step_type == 3) && (radio_width == IndexCount / 10000)))
-                    ) {
-
-                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
-                }
-                else
-                {
-                    OUTPUT_DEBUG(L"3. filter radio_width >> ([%d,%d,%d],%d)", Stride, IndexCount, veWidth, pscWidth);
-
-                }
-            }
-
-            //4. << change the radio_width, make obj if stil green
-            if (radio_psc_width > -1)
-            {
-                if (
-                    !(((step_type == 1) && ((radio_psc_width == IndexCount / 1))) ||
-                        ((step_type == 2) && (radio_psc_width == IndexCount / 10)) ||
-                        ((step_type == 3) && (radio_psc_width == IndexCount / 100)))
-                    ) {
-
-                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
-                }
-                else
-                {
-                    OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,%d])", Stride, IndexCount, veWidth, pscWidth);
-
-                }
-            }
-
-            if (draw_type == 1 || draw_type == 0) {
-
-                if (draw_type==0)
-                {
-                    //get orig
-                    pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
-                    //set off
-                    pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
-
-                }
-                if (draw_type == 1) {
-                    pContext->PSSetShader(sGreen, NULL, NULL); // color1
-                }
-                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-                if (draw_type == 1) {
-                    pContext->PSSetShader(sMagenta, NULL, NULL);// color2
-                }
-
-                if (draw_type == 0) {
-                    //restore orig
-                    pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
-                    //release
-                    SAFE_RELEASE(DepthStencilState_ORIG); //release
-                }
-              
-            }
-            else if (draw_type == 2)
-            {
-                pContext->PSSetShader(sGreen, NULL, NULL);
-                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
                 return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
             }
-            else if (draw_type == 3)
+            else
             {
-                return; //delete selected texture
+                OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,>> %d],%d,%d) --> (IndexCount==%d && veWidth==%d && pscWidth==%d)||", Stride, IndexCount, veWidth, pscWidth);
+
+                //3. << change the radio_width, make obj if stil green
+                if (radio_width > -1)
+                {
+                    if (
+                        !(((step_type == 1) && ((radio_width == veWidth / 100))) ||
+                            ((step_type == 2) && (radio_width == veWidth / 1000)) ||
+                            ((step_type == 3) && (radio_width == veWidth / 10000)))
+                        ) {
+
+                        return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                    }
+                    else
+                    {
+                        OUTPUT_DEBUG(L"3. filter radio_width >> ([%d,%d,>> %d],%d)", Stride, IndexCount, veWidth, pscWidth);
+
+                        //4. << change the radio_width, make obj if stil green
+                        if (radio_psc_width > -1)
+                        {
+                            if (
+                                !(((step_type == 1) && ((radio_psc_width == pscWidth / 1))) ||
+                                    ((step_type == 2) && (radio_psc_width == pscWidth / 10)) ||
+                                    ((step_type == 3) && (radio_psc_width == pscWidth / 100)))
+                                ) {
+
+                                return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                            }
+                            else
+                            {
+                                /*if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x39) & 1))
+                                {
+
+                                    char result_str[100];
+                                    std::string result_s;
+                                    sprintf(result_str, "%d,%d,%d,%d", Stride, IndexCount, veWidth, pscWidth);
+                                    result_s = result_str;
+                                    input_val = result_s.c_str();
+                                }*/
+
+                                OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,>> %d])", Stride, IndexCount, veWidth, pscWidth);
+                            }
+                        }
+
+                    }
+                }
             }
-            return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+        }
+    }
+    if (matched)
+    {
+        if (draw_type == 1 || draw_type == 0) {
+            if (draw_type == 0 || draw_type == 1) 
+            {
+                //get orig
+                pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
+                //set off
+                pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
+
+            }
+            if (draw_type == 1) {
+                pContext->PSSetShader(sGreen, NULL, NULL); // color1
+            }
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            if (draw_type == 1) {
+                pContext->PSSetShader(sMagenta, NULL, NULL);// color2
+            }
+            if (draw_type == 0 || draw_type == 1) {
+                //restore orig
+                pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
+                //release
+                SAFE_RELEASE(DepthStencilState_ORIG); //release
+            }
 
         }
-        else {
-            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);;
+        else if (draw_type == 2)
+        {
+            pContext->PSSetShader(sGreen, NULL, NULL);
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
         }
+        else if (draw_type == 3)
+        {
+            return; //delete selected texture
+        }
+
     }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
 }
@@ -433,6 +459,25 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
             pDevice->CreateDepthStencilState(&depthStencilDesc, &DepthStencilState_FALSE);
 
+
+            D3D11_RASTERIZER_DESC rasterizer_desc;
+            ZeroMemory(&rasterizer_desc, sizeof(rasterizer_desc));
+            rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+            rasterizer_desc.CullMode = D3D11_CULL_NONE; //D3D11_CULL_FRONT;
+            rasterizer_desc.FrontCounterClockwise = false;
+            float bias = 1000.0f;
+            float bias_float = static_cast<float>(-bias);
+            bias_float /= 10000.0f;
+            rasterizer_desc.DepthBias = DEPTH_BIAS_D32_FLOAT(*(DWORD*)&bias_float);
+            rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+            rasterizer_desc.DepthBiasClamp = 0.0f;
+            rasterizer_desc.DepthClipEnable = true;
+            rasterizer_desc.ScissorEnable = false;
+            rasterizer_desc.MultisampleEnable = false;
+            rasterizer_desc.AntialiasedLineEnable = false;
+            pDevice->CreateRasterizerState(&rasterizer_desc, &DEPTHBIASState_FALSE);
+
+
             if (!sGreen) {
                 GenerateShader(pDevice, &sGreen, 0.0f, 1.0f, 0.0f); //green
             }
@@ -462,7 +507,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         static bool draw_filled_fov = false;
         static int fov_size = 0;
         static float bg_alpha = 1;
-
+        static char input_buffer[64] = "";
 
         // greetings
         if (greetings)
@@ -516,26 +561,88 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
             ImGui::NewLine();
             ImGui::SliderInt("Step Mode", &step_type, 1, 3);
-            if (step_type == 1) {
-                ImGui::Text("Modelfind Mode 1 (Step 10)");
+            if (step_type == 1) 
+            {
+                ImGui::Text("Mode 1 (IndexCount/10 & veWidth/100 & pscWidth/1)");
             }
             else if (step_type == 2)
             {
-                ImGui::Text("Modelfind Mode 1 (Step 100)");
+                ImGui::Text("Mode 1 (IndexCount/100 & veWidth/1000 & pscWidth/10)");
             }
             else if (step_type == 3)
             {
-                ImGui::Text("Modelfind Mode 1 (Step 1000)");
+                ImGui::Text("Mode 1 (IndexCount/1000 & veWidth/10000 & pscWidth/100)");
             }
 
-            ImGui::SliderInt("radio_stride", &radio_stride, -1, 100, "Stride:%d");ImGui::SameLine();ImGui::Text("Alt + 1 (add)| Ctrl + 1 (min)");
-            ImGui::SliderInt("radio_inidex", &radio_inidex, -1, 100, "IndexCount:%d");ImGui::SameLine();ImGui::Text("Alt + 2 (add)| Ctrl + 2 (min)");
-            ImGui::SliderInt("radio_width", &radio_width, -1, 100, "veWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 3 (add)| Ctrl + 3 (min)");
-            ImGui::SliderInt("radio_psc_width", &radio_psc_width, -1, 100, "pscWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 4 (add)| Ctrl + 4 (min)");
+            ImGui::SliderInt("Stride", &radio_stride, -1, 100, "Stride:%d");ImGui::SameLine();ImGui::Text("Alt + 1 (add)| Ctrl + 1 (min)");
+            ImGui::SliderInt("IndexCount", &radio_inidex, -1, 100, "IndexCount:%d");ImGui::SameLine();ImGui::Text("Alt + 2 (add)| Ctrl + 2 (min)");
+            ImGui::SliderInt("veWidth", &radio_width, -1, 100, "veWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 3 (add)| Ctrl + 3 (min)");
+            ImGui::SliderInt("pscWidth", &radio_psc_width, -1, 100, "pscWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 4 (add)| Ctrl + 4 (min)");
+
+            if (ImGui::Button("Detach"))
+            {
+                ImGui::End();
+                ImGui::EndFrame();
+                ImGui::Render();
+                pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
+                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+                ImGui_ImplDX11_Shutdown();
+                ImGui_ImplWin32_Shutdown();
+                ImGui::DestroyContext();
+
+                SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
+                LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
+                {
+                    try
+                    {
+                        DetourTransactionBegin();
+                        DetourUpdateThread(GetCurrentThread());
+                        DetourDetach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
+                        DetourDetach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
+                        DetourTransactionCommit();
+                        FreeLibrary(global::Dll_HWND);
+
+                    }
+                    catch (...)
+                    {
+                        std::exception_ptr p = std::current_exception();
+                        LOG_ERROR("ERROR");
+                        LOG_ERROR("ERROR : {%s}", p);
+                        throw;
+                    }
+                }
+                return oPresent(pSwapChain, SyncInterval, Flags);
+            }
 
             ImGui::Checkbox("Refresh Draw Data", &refresh_draw_items);
-            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
+
             
+            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
+            ImGui::Text(input_val); ImGui::SameLine();
+            if (ImGui::Button("ResetIndex"))
+            {
+                current_count = -1;
+
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Copy"))
+            {
+                if (::OpenClipboard(NULL))
+                {
+                    ::EmptyClipboard();
+                    HGLOBAL clipbuffer;
+                    char* buffer;
+                    clipbuffer = ::GlobalAlloc(GMEM_DDESHARE, strlen(input_val) + 1);
+                    buffer = (char*)::GlobalLock(clipbuffer);
+                    strcpy(buffer, input_val);
+                    ::GlobalUnlock(clipbuffer);
+                    ::SetClipboardData(CF_TEXT, clipbuffer);
+                    ::CloseClipboard();
+                }
+
+            }
+
             // Update item list if we changed the number of items， TODO remove if ？
             if (ImGui::BeginTable("table_advanced", 8, flags, ImVec2(0, 0), 0.0f))
             {
@@ -603,47 +710,13 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
                         ImGui::PopID();
                     }
-                    ImGui::PopButtonRepeat();
-                    ImGui::EndTable();
                 }
-
-            if (ImGui::Button("Detach"))
-            {
-                ImGui::End();
-                ImGui::EndFrame();
-                ImGui::Render();
-                pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-                ImGui_ImplDX11_Shutdown();
-                ImGui_ImplWin32_Shutdown();
-                ImGui::DestroyContext();
-
-                SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
-                LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
-                {
-                    try
-                    {
-                        DetourTransactionBegin();
-                        DetourUpdateThread(GetCurrentThread());
-                        DetourDetach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
-                        DetourDetach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
-                        DetourTransactionCommit();
-                        FreeLibrary(global::Dll_HWND);
-
-                    }
-                    catch (...)
-                    {
-                        std::exception_ptr p = std::current_exception();
-                        LOG_ERROR("ERROR");
-                        LOG_ERROR("ERROR : {%s}", p);
-                        throw;
-                    }
-                }
-                return oPresent(pSwapChain, SyncInterval, Flags);
+                ImGui::PopButtonRepeat();
+                ImGui::EndTable();
             }
+            
             ImGui::End();
-            }
+        }
 
         const auto draw = ImGui::GetBackgroundDrawList();
         static const auto size = ImGui::GetIO().DisplaySize;
@@ -669,7 +742,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         throw;
     }
     return oPresent(pSwapChain, SyncInterval, Flags);
-    }
+}
 
 
 
