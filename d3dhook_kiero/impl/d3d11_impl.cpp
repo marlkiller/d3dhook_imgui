@@ -147,56 +147,52 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
 {
 
     //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
-
-
+    // change the stride TODO out log？
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
-        radio_inidex++;
+        radio_stride++;
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
-        radio_inidex--;
+        radio_stride--;
     }
-
+    // change the indexCount
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x32) & 1))
     {
-        radio_width++;
+        radio_inidex++;
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x32) & 1))
     {
+        radio_inidex--;
+    }
+    // change the veWidth
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    {
+        radio_width++;
+    }
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    {
         radio_width--;
     }
-
-    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    // change the psc_width
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x34) & 1))
     {
         radio_psc_width++;
     }
-    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x33) & 1))
+    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x34) & 1))
     {
         radio_psc_width--;
     }
 
-    /*if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
-    {
-        radio_stride++;
-    }
-    if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
-    {
-        radio_stride--;
-    }*/
-
+    // change the current_item
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
     {
-        //current_count
         if (! (current_count + 1 >= table_items.size()))
         {
             current_count = current_count + 1;
             current_item = table_items[current_count];
             OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
         }
-       
-
-
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
     {
@@ -304,8 +300,6 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
                 else
                 {
                     OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,%d],%d,%d) --> (IndexCount==%d && veWidth==%d && pscWidth==%d)||", Stride, IndexCount, veWidth, pscWidth);
-
-
                 }
             }
 
@@ -522,7 +516,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
             ImGui::NewLine();
             ImGui::SliderInt("Step Mode", &step_type, 1, 3);
-            ImGui::SameLine();
             if (step_type == 1) {
                 ImGui::Text("Modelfind Mode 1 (Step 10)");
             }
@@ -535,15 +528,15 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                 ImGui::Text("Modelfind Mode 1 (Step 1000)");
             }
 
-            ImGui::SliderInt("radio_stride", &radio_stride, -1, 100, "Stride:%d");
-            ImGui::SliderInt("radio_inidex", &radio_inidex, -1, 100, "IndexCount:%d");
-            ImGui::SliderInt("radio_width", &radio_width, -1, 100, "veWidth:%d");
-            ImGui::SliderInt("radio_psc_width", &radio_psc_width, -1, 100, "pscWidth:%d");
+            ImGui::SliderInt("radio_stride", &radio_stride, -1, 100, "Stride:%d");ImGui::SameLine();ImGui::Text("Alt + 1 (add)| Ctrl + 1 (min)");
+            ImGui::SliderInt("radio_inidex", &radio_inidex, -1, 100, "IndexCount:%d");ImGui::SameLine();ImGui::Text("Alt + 2 (add)| Ctrl + 2 (min)");
+            ImGui::SliderInt("radio_width", &radio_width, -1, 100, "veWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 3 (add)| Ctrl + 3 (min)");
+            ImGui::SliderInt("radio_psc_width", &radio_psc_width, -1, 100, "pscWidth:%d");ImGui::SameLine();ImGui::Text("Alt + 4 (add)| Ctrl + 4 (min)");
 
             ImGui::Checkbox("Refresh Draw Data", &refresh_draw_items);
             static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
-            // Update item list if we changed the number of items
-
+            
+            // Update item list if we changed the number of items， TODO remove if ？
             if (ImGui::BeginTable("table_advanced", 8, flags, ImVec2(0, 0), 0.0f))
             {
                 ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
@@ -557,64 +550,58 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                 ImGui::TableSetupScrollFreeze(1, 1);
                 ImGui::TableHeadersRow();
                 ImGui::PushButtonRepeat(true);
-#if 1
+                
                 // Demonstrate using clipper for large vertical lists
                 ImGuiListClipper clipper;
                 clipper.Begin(table_items.Size);
                 while (clipper.Step())
                 {
                     for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
-#else
                     {
-                        for (int row_n = 0; row_n < items.Size; row_n++)
-#endif
+                        DrawItem* item = &table_items[row_n];
+                        //if (!filter.PassFilter(item->Name))
+                        //    continue;
+                        const bool item_is_selected = selection.contains(item->ID);
+                        ImGui::PushID(item->ID);
+                        ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
+
+                        // For the demo purpose we can select among different type of items submitted in the first column
+                        ImGui::TableSetColumnIndex(0);
+                        char label[32];
+                        sprintf(label, "%d", item->ID);
+                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                        if (ImGui::Selectable(label, item_is_selected, selectable_flags, ImVec2(0, 0)))
                         {
-                            DrawItem* item = &table_items[row_n];
-                            //if (!filter.PassFilter(item->Name))
-                            //    continue;
-                            const bool item_is_selected = selection.contains(item->ID);
-                            ImGui::PushID(item->ID);
-                            ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
-
-                            // For the demo purpose we can select among different type of items submitted in the first column
-                            ImGui::TableSetColumnIndex(0);
-                            char label[32];
-                            sprintf(label, "%d", item->ID);
-                            ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                            if (ImGui::Selectable(label, item_is_selected, selectable_flags, ImVec2(0, 0)))
-                            {
-                                selection.clear();
-                                selection.push_back(item->ID);
-                            }
-
-                            if (ImGui::TableSetColumnIndex(1))
-                                ImGui::Text("%d", item->Stride);
-
-                            if (ImGui::TableSetColumnIndex(2))
-                                ImGui::Text("%d", item->IndexCount);
-
-                            if (ImGui::TableSetColumnIndex(3))
-                                ImGui::Text("%d", item->inWidth);
-
-                            if (ImGui::TableSetColumnIndex(4))
-                            {
-                                if (ImGui::SmallButton("SELECT")) {}
-                                ImGui::SameLine();
-                                if (ImGui::SmallButton("CLEAN")) {}
-                            }
-
-                            if (ImGui::TableSetColumnIndex(5))
-                                ImGui::Text("%d", item->veWidth);
-
-                            if (ImGui::TableSetColumnIndex(6))
-                                ImGui::Text("%d", item->pscWidth);
-
-
-                            if (ImGui::TableSetColumnIndex(7))
-                                ImGui::Text("");
-
-                            ImGui::PopID();
+                            selection.clear();
+                            selection.push_back(item->ID);
                         }
+
+                        if (ImGui::TableSetColumnIndex(1))
+                            ImGui::Text("%d", item->Stride);
+
+                        if (ImGui::TableSetColumnIndex(2))
+                            ImGui::Text("%d", item->IndexCount);
+
+                        if (ImGui::TableSetColumnIndex(3))
+                            ImGui::Text("%d", item->inWidth);
+
+                        if (ImGui::TableSetColumnIndex(4))
+                        {
+                            if (ImGui::SmallButton("SELECT")) {}
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("CLEAN")) {}
+                        }
+
+                        if (ImGui::TableSetColumnIndex(5))
+                            ImGui::Text("%d", item->veWidth);
+
+                        if (ImGui::TableSetColumnIndex(6))
+                            ImGui::Text("%d", item->pscWidth);
+
+                        if (ImGui::TableSetColumnIndex(7))
+                            ImGui::Text("");
+
+                        ImGui::PopID();
                     }
                     ImGui::PopButtonRepeat();
                     ImGui::EndTable();
