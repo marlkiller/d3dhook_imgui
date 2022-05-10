@@ -44,10 +44,14 @@ static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 
 static WNDPROC OriginalWndProcHandler = nullptr;
 
-// wallhack
-static ID3D11DepthStencilState* DepthStencilState_TRUE = NULL; //depth off
-static ID3D11DepthStencilState* DepthStencilState_FALSE = NULL; //depth off
-static ID3D11DepthStencilState* DepthStencilState_ORIG = NULL; //depth on
+
+//wh
+UINT stencilRef = 0;
+D3D11_DEPTH_STENCIL_DESC Desc;
+ID3D11DepthStencilState* oDepthStencilState = NULL;
+ID3D11DepthStencilState* pDepthStencilState = NULL;
+ID3D11DepthStencilState* depthStencilStateFalse;
+
 
 //shader
 static ID3D11PixelShader* sGreen = NULL;
@@ -370,7 +374,6 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
                                 OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,>> %d])", Stride, IndexCount, veWidth, pscWidth);
                             }
                         }
-
                     }
                 }
             }
@@ -378,34 +381,26 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
     }
     if (matched)
     {
-        if (draw_type == 1 || draw_type == 0) {
-            if (draw_type == 0 || draw_type == 1) 
-            {
-                //get orig
-                pContext->OMGetDepthStencilState(&DepthStencilState_ORIG, 0); //get original
-                //set off
-                pContext->OMSetDepthStencilState(DepthStencilState_FALSE, 0); //depthstencil off
+        if (draw_type == 0 || draw_type == 1) {
 
-            }
-            if (draw_type == 1) {
-                pContext->PSSetShader(sGreen, NULL, NULL); // color1
+            pContext->OMGetDepthStencilState(&oDepthStencilState, &stencilRef); //need stencilref for optimisation later
+            pContext->OMSetDepthStencilState(depthStencilStateFalse, stencilRef); //depth off
+            if (draw_type == 1)
+            {
+                pContext->PSSetShader(sMagenta, NULL, NULL);
             }
             oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            if (draw_type == 1) {
-                pContext->PSSetShader(sMagenta, NULL, NULL);// color2
+            pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef); //depth on
+            if (draw_type == 1)
+            {
+                pContext->PSSetShader(sGreen, NULL, NULL); // If you want all green,plz fuck this line;
             }
-            if (draw_type == 0 || draw_type == 1) {
-                //restore orig
-                pContext->OMSetDepthStencilState(DepthStencilState_ORIG, 0); //depthstencil on
-                //release
-                SAFE_RELEASE(DepthStencilState_ORIG); //release
-            }
-
+            SAFE_RELEASE(oDepthStencilState);
         }
         else if (draw_type == 2)
         {
             pContext->PSSetShader(sGreen, NULL, NULL);
-            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            //oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
             return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
         }
         else if (draw_type == 3)
@@ -445,25 +440,35 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
             LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, OriginalWndProcHandler);
 
-            // Create depthstencil state
-            D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
-            depthStencilDesc.DepthEnable = TRUE;
-            depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-            depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-            depthStencilDesc.StencilEnable = FALSE;
-            depthStencilDesc.StencilReadMask = 0xFF;
-            depthStencilDesc.StencilWriteMask = 0xFF;
-            // Stencil operations if pixel is front-facing
-            depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-            depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-            depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-            // Stencil operations if pixel is back-facing
-            depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-            depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-            depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-            pDevice->CreateDepthStencilState(&depthStencilDesc, &DepthStencilState_FALSE);
+            //create depthstencilstate
+            // DEPTH FALSE
+            D3D11_DEPTH_STENCIL_DESC depthStencilDescFalse = {};
+            //
+            // Depth state:
+            depthStencilDescFalse.DepthEnable = false;
+            depthStencilDescFalse.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+            
+            //UT4 only
+            depthStencilDescFalse.DepthFunc = D3D11_COMPARISON_GREATER; // D3D11_COMPARISON_ALWAYS
+            //
+            // Stencil state:
+            depthStencilDescFalse.StencilEnable = true;
+            depthStencilDescFalse.StencilReadMask = 0xFF;
+            depthStencilDescFalse.StencilWriteMask = 0xFF;
+            //
+            // Stencil operations if pixel is front-facing:
+            depthStencilDescFalse.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDescFalse.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+            depthStencilDescFalse.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDescFalse.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+            //
+            // Stencil operations if pixel is back-facing:
+            depthStencilDescFalse.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDescFalse.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+            depthStencilDescFalse.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+            depthStencilDescFalse.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+            pDevice->CreateDepthStencilState(&depthStencilDescFalse, &depthStencilStateFalse);
+            
 
 
             D3D11_RASTERIZER_DESC rasterizer_desc;
@@ -482,7 +487,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             rasterizer_desc.MultisampleEnable = false;
             rasterizer_desc.AntialiasedLineEnable = false;
             pDevice->CreateRasterizerState(&rasterizer_desc, &DEPTHBIASState_FALSE);
-
 
             if (!sGreen) {
                 GenerateShader(pDevice, &sGreen, 0.0f, 1.0f, 0.0f); //green
@@ -713,6 +717,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                 {
                     try
                     {
+                        sGreen->Release();
+                        sMagenta->Release();
+                        SAFE_RELEASE(depthStencilStateFalse);
                         DetourTransactionBegin();
                         DetourUpdateThread(GetCurrentThread());
                         DetourDetach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
