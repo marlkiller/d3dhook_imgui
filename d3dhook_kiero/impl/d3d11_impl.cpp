@@ -306,7 +306,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         }
     }
 
-    if ((draw_type != -1 && radio_stride == Stride))
+    if ((draw_type != -1 && radio_stride == Stride && current_count == -1))
     {
         // 1. >> first make target obj green , hide others
         //if (radio_stride == Stride) {
