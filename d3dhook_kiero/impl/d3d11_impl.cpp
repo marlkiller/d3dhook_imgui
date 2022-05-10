@@ -145,6 +145,7 @@ static int radio_width = -1;
 static int radio_psc_width = -1;
 static int step_type = 1;
 
+static int find_model_type = 0;
 static DrawItem current_item;
 static int current_count = -1;
 const char* input_val = "";
@@ -294,7 +295,9 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         }
     }
 
-    if (current_count >= 0)
+
+    //OUTPUT_DEBUG(L"find_model_type %d, current_count %d,draw_type %d", find_model_type, current_count, draw_type)
+    if (find_model_type ==1 && current_count >= 0)
     {
         if (current_item.Stride == Stride && current_item.IndexCount == IndexCount && current_item.veWidth == veWidth && current_item.pscWidth == pscWidth && current_item.inWidth == inWidth)
         {
@@ -306,7 +309,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         }
     }
 
-    if ((draw_type != -1 && radio_stride == Stride && current_count == -1))
+    if ((Stride != -1 && radio_stride == Stride && find_model_type == 2))
     {
         // 1. >> first make target obj green , hide others
         //if (radio_stride == Stride) {
@@ -555,9 +558,11 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             ImGui::NewLine();
 
 
-            if (ImGui::CollapsingHeader("find_model"))
+            if (ImGui::CollapsingHeader("FindModel"))
             {
-
+                ImGui::Text("FindModelType: ");
+                ImGui::RadioButton("FindByTable", &find_model_type, 1); ImGui::SameLine();
+                ImGui::RadioButton("FindBySlider", &find_model_type, 2);
                 /*const char* items[] = { "None", "DrawZ", "DrawZ&DrawColor", "DrawColor", "DrawHide"};
                 static int item_current = 0;
                 ImGui::Combo("combo", &item_current, items, IM_ARRAYSIZE(items));*/
@@ -671,8 +676,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
                 if (ImGui::CollapsingHeader("FindBySlider")) 
                 {
-                    current_count = -1;
-
                     ImGui::SliderInt("StepMode", &step_type, 1, 3, "Step Mode:%d");
                     if (step_type == 1)
                     {
