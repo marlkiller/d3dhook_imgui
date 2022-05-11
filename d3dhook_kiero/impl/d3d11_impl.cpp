@@ -550,7 +550,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             ImGui::NewLine();
 
 
-            if (ImGui::CollapsingHeader("FindModel"))
+            if (ImGui::CollapsingHeader("FindModel", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 ImGui::Text("FindModelType: ");
                 ImGui::RadioButton("FindByTable", &find_model_type, 1); ImGui::SameLine();
@@ -568,41 +568,40 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
                 if (find_model_type == 1)
                 {
-                    if (ImGui::CollapsingHeader("FindByTable"))
+                    if (ImGui::CollapsingHeader("FindByTable", ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        ImGui::Checkbox("RefreshDrawData", &refresh_draw_items);
+                        ImGui::Checkbox("RefreshDrawData", &refresh_draw_items); // TODO Auto stop ??
 
                         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
                         
-                        ImGui::Text("-> %d: ( %d ,%d ,%d ,%d )",current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth); ImGui::SameLine();
-                        /*if (ImGui::Button("ResetIndex"))
+                        if (current_count<=-1)
                         {
-                            current_count = -1;
-
-                        }*/
-                        ImGui::SameLine();
-                        if (ImGui::Button("Copy"))
-                        {
-                            // char result_str[100];
-                            // std::string result_s;
-                            // sprintf(result_str, "%d: %d,%d,%d,%d", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth);
-                            // result_s = result_str;
-                            // input_val = result_s.c_str();
-                            
-                            // if (::OpenClipboard(NULL))
-                            // {
-                            //     ::EmptyClipboard();
-                            //     HGLOBAL clipbuffer;
-                            //     char* buffer;
-                            //     clipbuffer = ::GlobalAlloc(GMEM_DDESHARE, strlen(input_val) + 1);
-                            //     buffer = (char*)::GlobalLock(clipbuffer);
-                            //     strcpy(buffer, input_val);
-                            //     ::GlobalUnlock(clipbuffer);
-                            //     ::SetClipboardData(CF_TEXT, clipbuffer);
-                            //     ::CloseClipboard();
-                            // }
+                            ImGui::Text("-> Plz type Alt+0/Ctrl+0 select: "); 
                         }
+                        else {
+                            ImGui::Text("-> %d: ( %d ,%d ,%d ,%d )", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth); ImGui::SameLine();
+                            ImGui::SameLine();
+                            if (ImGui::Button("Copy"))
+                            {
+                                char result_str[100];
+                                std::string result_s;
+                                sprintf(result_str, "%d: %d,%d,%d,%d", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth);
+                                result_s = result_str;
 
+                                if (::OpenClipboard(NULL))
+                                {
+                                    ::EmptyClipboard();
+                                    HGLOBAL clipbuffer;
+                                    char* buffer;
+                                    clipbuffer = ::GlobalAlloc(GMEM_DDESHARE, strlen(result_s.c_str()) + 1);
+                                    buffer = (char*)::GlobalLock(clipbuffer);
+                                    strcpy(buffer, result_s.c_str());
+                                    ::GlobalUnlock(clipbuffer);
+                                    ::SetClipboardData(CF_TEXT, clipbuffer);
+                                    ::CloseClipboard();
+                                }
+                            }
+                        }
                         if (ImGui::BeginTable("BableAdvanced", 8, flags, ImVec2(0, 0), 0.0f))
                         {
                             ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
@@ -676,7 +675,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                     }
                 } else if (find_model_type == 2)
                 {
-                    if (ImGui::CollapsingHeader("FindBySlider")) 
+                    if (ImGui::CollapsingHeader("FindBySlider", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::SliderInt("StepMode", &step_type, 1, 3, "Step Mode:%d");
                         if (step_type == 1)
@@ -704,6 +703,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(7.0f, 0.6f, 0.6f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(7.0f, 0.7f, 0.7f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(7.0f, 0.8f, 0.8f));
+            ImGui::NewLine();
             if (ImGui::Button("Detach"))
             {
                 ImGui::End();
