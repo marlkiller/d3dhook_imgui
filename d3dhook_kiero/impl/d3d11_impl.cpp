@@ -785,6 +785,7 @@ void impl::d3d11::init()
     {
         hDXGIDLL = GetModuleHandle("dxgi.dll");
         Sleep(4000);
+        LOG_INFO("GetModuleHandle with dxgi.dll..");
     } while (!hDXGIDLL);
     Sleep(100);
 
@@ -794,11 +795,10 @@ void impl::d3d11::init()
     WNDCLASSEXA wc = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandleA(NULL), NULL, NULL, NULL, NULL, "DX", NULL };
     RegisterClassExA(&wc);
     HWND hWnd = CreateWindowA("DX", NULL, WS_OVERLAPPEDWINDOW, 100, 100, 300, 300, NULL, NULL, wc.hInstance, NULL);
-
+    LOG_INFO("CreateWindowA >> hWnd {%d}",hWnd);
+    
     D3D_FEATURE_LEVEL requestedLevels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
     D3D_FEATURE_LEVEL obtainedLevel;
-    ID3D11Device* d3dDevice = nullptr;
-    ID3D11DeviceContext* d3dContext = nullptr;
 
     DXGI_SWAP_CHAIN_DESC scd;
     ZeroMemory(&scd, sizeof(scd));
@@ -821,6 +821,7 @@ void impl::d3d11::init()
     scd.BufferDesc.RefreshRate.Numerator = 0;
     scd.BufferDesc.RefreshRate.Denominator = 1;
 
+    LOG_INFO("Create directX device and swapchain!");
     if (FAILED(D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
@@ -852,16 +853,19 @@ void impl::d3d11::init()
     oDrawIndexed = (D3D11DrawIndexedHook)(DWORD_PTR*)pContextVTable[12];
     oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
 
-
+    LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%d}, oDrawIndexed{%d}",oPresent,oDrawIndexed);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
     DetourAttach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
     DetourTransactionCommit();
+    LOG_INFO("DetourTransactionBegin hook complete >> hkPresent11 {%d}, hkDrawIndexed11{%d}",hkPresent11,hkDrawIndexed11);
 
     DWORD dwOld;
     VirtualProtect(oPresent, 2, PAGE_EXECUTE_READWRITE, &dwOld);
+    
+    LOG_INFO("VirtualProtect >> oPresent {%d}, dwOld{ %d}",oPresent,dwOld);
 
     /*while (true) {
         Sleep(10);
@@ -872,6 +876,8 @@ void impl::d3d11::init()
     pDevice->Release();
     pContext->Release();
     pSwapChain->Release();
+
+    LOG_INFO("Device Release >> pDevice, pContext, pSwapChain");
 
 }
 
