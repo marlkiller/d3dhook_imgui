@@ -318,51 +318,42 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
 
                 return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
             }
-            else
-            {
-                OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,>> %d],%d,%d)", 
-                    Stride, IndexCount, veWidth, pscWidth
-                );
+            OUTPUT_DEBUG(L"2. filter radio_inidex >> ( [%d,>> %d],%d,%d)",
+                         Stride, IndexCount, veWidth, pscWidth
+            );
 
-                //3. << change the radio_width, make obj if stil green
-                if (radio_width > -1)
+            //3. << change the radio_width, make obj if stil green
+            if (radio_width > -1)
+            {
+                if (
+                    !(((step_type == 1) && ((radio_width == veWidth / 100))) ||
+                        ((step_type == 2) && (radio_width == veWidth / 1000)) ||
+                        ((step_type == 3) && (radio_width == veWidth / 10000)))
+                ) {
+
+                    return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+                }
+                OUTPUT_DEBUG(L"3. filter radio_width >> ([%d,%d,>> %d],%d)", Stride, IndexCount, veWidth, pscWidth);
+
+                //4. << change the radio_width, make obj if stil green
+                if (radio_psc_width > -1)
                 {
                     if (
-                        !(((step_type == 1) && ((radio_width == veWidth / 100))) ||
-                            ((step_type == 2) && (radio_width == veWidth / 1000)) ||
-                            ((step_type == 3) && (radio_width == veWidth / 10000)))
-                        ) {
+                        !(((step_type == 1) && ((radio_psc_width == pscWidth / 1))) ||
+                            ((step_type == 2) && (radio_psc_width == pscWidth / 10)) ||
+                            ((step_type == 3) && (radio_psc_width == pscWidth / 100)))
+                    ) {
 
                         return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
                     }
-                    else
+                    if ((GetAsyncKeyState(VK_END) & 1))
                     {
-                        OUTPUT_DEBUG(L"3. filter radio_width >> ([%d,%d,>> %d],%d)", Stride, IndexCount, veWidth, pscWidth);
-
-                        //4. << change the radio_width, make obj if stil green
-                        if (radio_psc_width > -1)
-                        {
-                            if (
-                                !(((step_type == 1) && ((radio_psc_width == pscWidth / 1))) ||
-                                    ((step_type == 2) && (radio_psc_width == pscWidth / 10)) ||
-                                    ((step_type == 3) && (radio_psc_width == pscWidth / 100)))
-                                ) {
-
-                                return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
-                            }
-                            else
-                            {
-                                if ((GetAsyncKeyState(VK_END) & 1))
-                                {
-                                    LOG_INFO("Redio:Target obj is=\t(Stride==%d && IndexCount==%d && veWidth==%d && pscWidth==%d)", 
-                                        Stride, IndexCount, veWidth, pscWidth,
-                                        Stride, IndexCount, veWidth, pscWidth
-                                    );
-                                }
-                                OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,>> %d])", Stride, IndexCount, veWidth, pscWidth);
-                            }
-                        }
+                        LOG_INFO("Redio:Target obj is=\t(Stride==%d && IndexCount==%d && veWidth==%d && pscWidth==%d)", 
+                                 Stride, IndexCount, veWidth, pscWidth,
+                                 Stride, IndexCount, veWidth, pscWidth
+                        );
                     }
+                    OUTPUT_DEBUG(L"4. filter radio_psc_width >> ([%d,%d,%d,>> %d])", Stride, IndexCount, veWidth, pscWidth);
                 }
             }
         }
