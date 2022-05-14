@@ -13,8 +13,10 @@
 #include <exception>
 #include <d3dcompiler.h>
 #include <string>
-
+#include <DirectXMath.h>
+#include <vector>
 #pragma comment(lib, "winmm.lib ")
+
 #define SAFE_RELEASE(x) if (x) { x->Release(); x = NULL; }
 #define DEPTH_BIAS_D32_FLOAT(d) (d/(1/pow(2,23)))
 
@@ -57,6 +59,9 @@ ID3D11DepthStencilState* depthStencilStateFalse;
 static ID3D11PixelShader* sGreen = NULL;
 static ID3D11PixelShader* sMagenta = NULL;
 
+static ImColor color_red = ImColor(255, 0, 0, 255);
+
+
 //wh
 ID3D11RasterizerState* DEPTHBIASState_FALSE;
 ID3D11RasterizerState* DEPTHBIASState_TRUE;
@@ -66,6 +71,9 @@ static bool p_open = false;
 static bool greetings = true;
 static bool init = false;
 static bool refresh_draw_items = false;
+
+static int draw1_x = -1;
+static int draw1_y = -1;
 
 enum DrawItemColumnID
 {
@@ -93,11 +101,26 @@ static ImVector<DrawItem> table_items;
 static ImVector<int> selection;
 
 static int id_number = 0;
-static int draw_type = -1;
+static int draw_type = 0;
 
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    //ImGuiIO& io = ImGui::GetIO();
+    /*POINT mPos;
+    GetCursorPos(&mPos);
+    ScreenToClient(global::GAME_HWND, &mPos);
+    ImGui::GetIO().MousePos.x = mPos.x;
+    ImGui::GetIO().MousePos.y = mPos.y;*/
+
+    /*if (uMsg == WM_KEYUP)
+    {
+        if (wParam == VK_INSERT)
+        {
+            p_open = !p_open;
+        }
+    }*/
+
     if (p_open)
     {
         ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
@@ -152,17 +175,305 @@ static int step_type = 1;
 static int find_model_type = 0;
 static DrawItem current_item;
 static int current_count = -1;
-// const char* input_val = "";
+int aimheight = 0;
+//Viewport
+float ViewportWidth;
+float ViewportHeight;
+float ScreenCenterX;
+float ScreenCenterY;
+
+//w2s
+int WorldViewCBnum = 2; //2
+int ProjCBnum = 1;//1
+int matProjnum = 16;//16
+
+ID3D11Buffer* pWorldViewCB = nullptr;
+ID3D11Buffer* pProjCB = nullptr;
+
+ID3D11Buffer* m_pCurWorldViewCB = NULL;
+ID3D11Buffer* m_pCurProjCB = NULL;
+
+float matWorldView[4][4];
+float matProj[4][4];
+
+float* worldview;
+float* proj;
+ID3D11Buffer* pStageBufferA = NULL;
+ID3D11Buffer* pStageBufferB = NULL;
+
+ID3D11SamplerState* pSamplerState;
+ID3D11Texture2D* textureRed = nullptr;
+ID3D11Texture2D* textureGreen = nullptr;
+
+ID3D11ShaderResourceView* textureViewRed;
+ID3D11ShaderResourceView* textureViewGreen;
+
+
+void MapBuffer(ID3D11Buffer* pStageBuffer, void** ppData, UINT* pByteWidth)
+{
+    D3D11_MAPPED_SUBRESOURCE subRes;
+    HRESULT res = pContext->Map(pStageBuffer, 0, D3D11_MAP_READ, 0, &subRes);
+    OUTPUT_DEBUG(L"pContext->Map(pStageBuffer, 0, D3D11_MAP_READ, 0, &subRes)");
+    D3D11_BUFFER_DESC desc;
+    pStageBuffer->GetDesc(&desc);
+
+    if (FAILED(res))
+    {
+        OUTPUT_DEBUG(L"Map stage buffer failed {%d} {%d} {%d} {%d} {%d}", (void*)pStageBuffer, desc.ByteWidth, desc.BindFlags, desc.CPUAccessFlags, desc.Usage);
+        SAFE_RELEASE(pStageBuffer); 
+        return;
+    }
+
+    *ppData = subRes.pData;
+
+    if (pByteWidth)
+        *pByteWidth = desc.ByteWidth;
+}
+
+void UnmapBuffer(ID3D11Buffer* pStageBuffer)
+{
+    pContext->Unmap(pStageBuffer, 0);
+}
+ID3D11Buffer* CopyBufferToCpuB(ID3D11Buffer* pBufferB)
+{
+    D3D11_BUFFER_DESC CBDescB;
+    pBufferB->GetDesc(&CBDescB);
+
+    if (pStageBufferB == NULL)
+    {
+        //Log("onceB");
+        // create buffer
+        D3D11_BUFFER_DESC descB;
+        descB.BindFlags = 0;
+        descB.ByteWidth = CBDescB.ByteWidth;
+        descB.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        descB.MiscFlags = 0;
+        descB.StructureByteStride = 0;
+        descB.Usage = D3D11_USAGE_STAGING;
+
+        if (FAILED(pDevice->CreateBuffer(&descB, NULL, &pStageBufferB)))
+        {
+            //Log("CreateBuffer failed when CopyBufferToCpuB {}");
+        }
+    }
+
+    if (pStageBufferB != NULL)
+        pContext->CopyResource(pStageBufferB, pBufferB);
+
+    return pStageBufferB;
+}
+float GetDst(float Xx, float Yy, float xX, float yY)
+{
+    return sqrt((yY - Yy) * (yY - Yy) + (xX - Xx) * (xX - Xx));
+}
+ID3D11Buffer* CopyBufferToCpuA(ID3D11Buffer* pBufferA)
+{
+    D3D11_BUFFER_DESC CBDescA;
+    pBufferA->GetDesc(&CBDescA);
+
+    if (pStageBufferA == NULL)
+    {
+        //Log("onceA");
+        // create buffer
+        D3D11_BUFFER_DESC descA;
+        descA.BindFlags = 0;
+        descA.ByteWidth = CBDescA.ByteWidth;
+        descA.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        descA.MiscFlags = 0;
+        descA.StructureByteStride = 0;
+        descA.Usage = D3D11_USAGE_STAGING;
+
+        if (FAILED(pDevice->CreateBuffer(&descA, NULL, &pStageBufferA)))
+        {
+            //Log("CreateBuffer failed when CopyBufferToCpuA {}");
+        }
+    }
+
+    if (pStageBufferA != NULL)
+        pContext->CopyResource(pStageBufferA, pBufferA);
+
+    return pStageBufferA;
+}
+
+void AddModel(ID3D11DeviceContext* pContext)
+{
+
+
+    pContext->VSGetConstantBuffers(WorldViewCBnum, 1, &pWorldViewCB);	//WorldViewCBnum
+    pContext->VSGetConstantBuffers(ProjCBnum, 1, &pProjCB);
+    if (pWorldViewCB == nullptr)
+    {
+        OUTPUT_DEBUG(L"pWorldViewCB == nullptr");
+        SAFE_RELEASE(pWorldViewCB); return;
+    }
+    if (pProjCB == nullptr)
+    {
+        OUTPUT_DEBUG(L"pProjCB == nullptr");
+        SAFE_RELEASE(pProjCB); return;
+    }
+    if (pWorldViewCB != nullptr && pProjCB != nullptr)
+    {
+        m_pCurWorldViewCB = CopyBufferToCpuA(pWorldViewCB);
+        m_pCurProjCB = CopyBufferToCpuB(pProjCB);
+    }
+    if (m_pCurWorldViewCB == nullptr)
+    {
+        OUTPUT_DEBUG(L"m_pCurWorldViewCB == nullptr");
+        SAFE_RELEASE(m_pCurWorldViewCB); return;
+    }
+    if (m_pCurProjCB == nullptr)
+    {
+        OUTPUT_DEBUG(L"m_pCurProjCB == nullptr");
+        SAFE_RELEASE(m_pCurProjCB); return;
+    }
+
+    if (m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr)
+    {
+        OUTPUT_DEBUG(L"m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr");
+        MapBuffer(m_pCurWorldViewCB, (void**)&worldview, NULL);
+        memcpy(matWorldView, &worldview[0], sizeof(matWorldView));
+        UnmapBuffer(m_pCurWorldViewCB);
+        MapBuffer(m_pCurProjCB, (void**)&proj, NULL);
+        memcpy(matProj, &proj[matProjnum], sizeof(matProj));			//matProjnum
+        UnmapBuffer(m_pCurProjCB);
+    }
+
+    OUTPUT_DEBUG(L"int method1 = 4");
+    int method1 = 4;
+    if (method1 == 1)
+    {
+        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
+        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+
+        //normal
+        DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
+
+        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+
+        float xx, yy;
+        xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+        yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
+
+        OUTPUT_DEBUG(L"draw1 %d,%d,%d", xx, yy, mw);
+        draw1_x = xx;
+        draw1_y = yy;
+
+    }
+    if (method1 == 2)
+    {
+        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
+        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+
+        //transpose
+        DirectX::XMMATRIX WorldViewProj = DirectX::XMMatrixTranspose(viewProjMatrix); //transpose
+
+        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+
+        float xx, yy;
+        xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+        yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
+
+        OUTPUT_DEBUG(L"draw2 %d,%d,%d", xx, yy, mw);
+        draw1_x = xx;
+        draw1_y = yy;
+    }
+
+  
+    if (method1 == 3)
+    {
+        //TAB worldtoscreen unity 2018
+        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, aimheight, 0.0f, 1.0);
+        //DirectX::XMVECTOR Pos = XMVectorSet(0.0f, aimheight, preaim, 1.0);
+        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+
+        //normal
+        DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
+
+        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+
+        if (mw > 1.0f)
+        {
+            float invw = 1.0f / mw;
+            mx *= invw;
+            my *= invw;
+
+            float x = ViewportWidth / 2.0f;
+            float y = ViewportHeight / 2.0f;
+
+            x += 0.5f * mx * ViewportWidth + 0.5f;
+            y += 0.5f * my * ViewportHeight + 0.5f;//-
+            mx = x;
+            my = y;
+        }
+        else
+        {
+            mx = -1.0f;
+            my = -1.0f;
+        }
+
+        OUTPUT_DEBUG(L"draw3 %d,%d,%d", mx, my, mw);
+        draw1_x = mx;
+        draw1_y = my;
+    }
+
+    if (method1 == 4)
+    {
+        
+        //new unity incomplete, todo: fix matrix is flipped
+        //1, 2, 43
+        /*D3DXMATRIX matrix, m1;
+        D3DXVECTOR4 position;
+        D3DXVECTOR4 input;
+        D3DXMatrixMultiply(&matrix, (D3DXMATRIX*)matWorldView, (D3DXMATRIX*)matProj);
+
+        D3DXMatrixTranspose(&matrix, &matrix);
+
+        position.x = input.x * matrix._11 + input.y * matrix._12 + input.z * matrix._13 + input.w * matrix._14;
+        position.y = input.x * matrix._21 + input.y * matrix._22 + input.z * matrix._23 + input.w * matrix._24;
+        position.z = input.x * matrix._31 + input.y * matrix._32 + input.z * matrix._33 + input.w * matrix._34;
+        position.w = input.x * matrix._41 + input.y * matrix._42 + input.z * matrix._43 + input.w * matrix._44;
+
+        float xx, yy;
+        xx = ((position.x / position.w) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+        yy = (ViewportHeight / 2.0f) + ((position.y / position.w) * (ViewportHeight / 2.0f));
+
+        AimEspInfo_t pAimEspInfo = { static_cast<float>(xx), static_cast<float>(yy), static_cast<float>(position.w) };
+        AimEspInfo.push_back(pAimEspInfo);
+        
+        OUTPUT_DEBUG(L"draw4 %d,%d,%d", xx, yy, mw);*/
+
+        draw1_x = 200;
+        draw1_y = 300;
+    }
+
+
+}
+
 
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
     bool matched = false;
-    //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
-    // TODO mov key operation log in hkDrawIndexedInstancedIndirect?
-    // change the stride 
+
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
         radio_stride++;
+    }
+
+    //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
+    // TODO mov key operation log in hkDrawIndexedInstancedIndirect?
+    // change the stride 
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x35) & 1))
+    {
+        find_model_type = 2;
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
@@ -300,8 +611,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             matched = true;
         }
     }
-
-    if ((Stride != -1 && radio_stride == Stride && find_model_type == 2))
+    if ((radio_stride == Stride && find_model_type == 2))
     {
         // 1. >> first make target obj green , hide others
         //if (radio_stride == Stride) {
@@ -358,40 +668,82 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             }
         }
     }
-    if (matched)
+    if (matched && draw_type > 0)
     {
-        if (draw_type == 0 || draw_type == 1) {
+        if (draw_type == 1 || draw_type == 2) {
 
             pContext->OMGetDepthStencilState(&oDepthStencilState, &stencilRef); //need stencilref for optimisation later
             pContext->OMSetDepthStencilState(depthStencilStateFalse, stencilRef); //depth off
-            if (draw_type == 1)
+            if (draw_type == 2)
             {
                 pContext->PSSetShader(sMagenta, NULL, NULL);
             }
             oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
             pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef); //depth on
-            if (draw_type == 1)
+            if (draw_type == 2)
             {
                 pContext->PSSetShader(sGreen, NULL, NULL); // If you want all green,plz fuck this line;
             }
             SAFE_RELEASE(oDepthStencilState);
-        }
-        else if (draw_type == 2)
-        {
-            pContext->PSSetShader(sGreen, NULL, NULL);
-            //oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+            
+            // return after draw ? Prevent secondary rendering ?
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            //return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            return;
         }
         else if (draw_type == 3)
         {
-            return; //delete selected texture
+            pContext->PSSetShader(sGreen, NULL, NULL);
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            //return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
+            // return after draw ? Prevent secondary rendering ?
+            return;
+        }
+        else if (draw_type == 4 || draw_type == 5)
+        {
+            if (draw_type == 4)
+            {
+                pContext->OMGetDepthStencilState(&oDepthStencilState, &stencilRef); //need stencilref for optimisation later
+            }
+
+            for (int x1 = 0; x1 <= 10; x1++)
+            {
+                pContext->PSSetShaderResources(x1, 1, &textureViewRed);
+            }
+            pContext->PSSetSamplers(0, 1, &pSamplerState);
+            if (draw_type == 4)
+            {
+                pContext->OMSetDepthStencilState(depthStencilStateFalse, 0);
+            }
+            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            if (draw_type == 4)
+            {
+                /*for (int x1 = 0; x1 <= 10; x1++)
+                {
+                    pContext->PSSetShaderResources(x1, 1, &textureViewGreen);
+                }
+                pContext->PSSetSamplers(0, 1, &pSamplerState);*/
+
+                pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef);
+                SAFE_RELEASE(oDepthStencilState);
+                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+            }
+            return; 
+        }
+        else {
+            
+            //AddModel(pContext); //w2s
+            return;//delete selected texture
         }
 
     }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
 }
 
-
+uint32_t ColorRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    return (r | (g << 8) | (b << 16) | (a << 24));
+}
 
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
@@ -447,7 +799,31 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             depthStencilDescFalse.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
             depthStencilDescFalse.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
             pDevice->CreateDepthStencilState(&depthStencilDescFalse, &depthStencilStateFalse);
-            
+
+
+            D3D11_TEXTURE2D_DESC d_desc;
+            DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            memset(&d_desc, 0, sizeof(d_desc));
+            d_desc.Width = 1;
+            d_desc.Height = 1;
+            d_desc.MipLevels = 1;
+            d_desc.ArraySize = 1;
+            d_desc.Format = format;
+            d_desc.SampleDesc.Count = 1;
+            d_desc.Usage = D3D11_USAGE_DEFAULT;
+            d_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            HRESULT hr;
+            static const uint32_t color_uint_red = 0xff0000ff;
+            D3D11_SUBRESOURCE_DATA initDataRed = { &color_uint_red, sizeof(uint32_t), 0 };
+            hr = pDevice->CreateTexture2D(&d_desc, &initDataRed, &textureRed);
+
+            D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+            memset(&SRVDesc, 0, sizeof(SRVDesc));
+            SRVDesc.Format = format;
+            SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+            SRVDesc.Texture2D.MipLevels = 1;
+            pDevice->CreateShaderResourceView(textureRed, &SRVDesc, &textureViewRed);
+
 
 
             D3D11_RASTERIZER_DESC rasterizer_desc;
@@ -466,6 +842,12 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             rasterizer_desc.MultisampleEnable = false;
             rasterizer_desc.AntialiasedLineEnable = false;
             pDevice->CreateRasterizerState(&rasterizer_desc, &DEPTHBIASState_FALSE);
+
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            ViewportWidth = io.DisplaySize.x;
+            ViewportHeight = io.DisplaySize.y;
+            ScreenCenterX = ViewportWidth / 2.0f;
+            ScreenCenterY = ViewportHeight / 2.0f;
 
             if (!sGreen) {
                 GenerateShader(pDevice, &sGreen, 0.0f, 1.0f, 0.0f); //green
@@ -495,11 +877,10 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         static bool draw_filled_fov = false;
         static int fov_size = 0;
         static float bg_alpha = 0.5;
-
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
         // greetings
         if (greetings)
         {
-            ImGuiIO& io = ImGui::GetIO(); (void)io;
             float sub_win_width = 300;
             float sub_win_height = 40;
             ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
@@ -519,8 +900,14 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             }
         }
 
+
+        //ImGuiIO& io = ImGui::GetIO();
+        POINT mPos;
+        GetCursorPos(&mPos);
+        ScreenToClient(global::GAME_HWND, &mPos);
+        ImGui::GetIO().MousePos.x = mPos.x;
+        ImGui::GetIO().MousePos.y = mPos.y;
         if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
         io.MouseDrawCursor = p_open;
 
         if (p_open)
@@ -546,16 +933,15 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                 ImGui::Text("FindModelType: ");
                 ImGui::RadioButton("FindByTable", &find_model_type, 1); ImGui::SameLine();
                 ImGui::RadioButton("FindBySlider", &find_model_type, 2);
-                /*const char* items[] = { "None", "DrawZ", "DrawZ&DrawColor", "DrawColor", "DrawHide"};
-                static int item_current = 0;
-                ImGui::Combo("combo", &item_current, items, IM_ARRAYSIZE(items));*/
+                const char* items[] = { "None", "DrawZ", "DrawZ&DrawShaderColor", "DrawShaderColor","DrawZ&DrawTextureColor","DrawTextureColor", "DrawHide"};
+                ImGui::Combo("DrawType: ", &draw_type, items, IM_ARRAYSIZE(items));
 
-                ImGui::Text("DrawType: ");
-                ImGui::RadioButton("None", &draw_type, -1); ImGui::SameLine();
-                ImGui::RadioButton("DrawZ", &draw_type, 0); ImGui::SameLine();
-                ImGui::RadioButton("DrawZ&DrawColor", &draw_type, 1); ImGui::SameLine();
-                ImGui::RadioButton("DrawColor", &draw_type, 2); ImGui::SameLine();
-                ImGui::RadioButton("DrawHide", &draw_type, 3);
+                /*ImGui::Text("DrawType: ");
+                ImGui::RadioButton("None", &draw_type, 0); ImGui::SameLine();
+                ImGui::RadioButton("DrawZ", &draw_type, 1); ImGui::SameLine();
+                ImGui::RadioButton("DrawZ&DrawColor", &draw_type, 2); ImGui::SameLine();
+                ImGui::RadioButton("DrawColor", &draw_type, 3); ImGui::SameLine();
+                ImGui::RadioButton("DrawHide", &draw_type, 4);*/
 
                 if (find_model_type == 1)
                 {
@@ -666,6 +1052,10 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                     }
                 } else if (find_model_type == 2)
                 {
+                    step_type = 3;
+                    radio_stride = 40;
+                    radio_inidex = 7;
+
                     if (ImGui::CollapsingHeader("FindBySlider", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::SliderInt("StepMode", &step_type, 1, 3, "Step Mode:%d");
@@ -742,12 +1132,17 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         const auto draw = ImGui::GetBackgroundDrawList();
         static const auto size = ImGui::GetIO().DisplaySize;
         static const auto center = ImVec2(size.x / 2, size.y / 2);
-
         if (draw_fov)
             draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
 
         if (draw_filled_fov)
             draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
+
+        if (draw1_x != -1 && draw1_y != -1)
+        {
+            draw->AddText(ImVec2(draw1_x, draw1_y), color_red, "this is draw1");
+        }
+        draw->AddText(ImVec2(100, 100), color_red, "this is demo");
 
         ImGui::EndFrame();
         ImGui::Render();
