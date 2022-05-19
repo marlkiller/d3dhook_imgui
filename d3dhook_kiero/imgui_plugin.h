@@ -20,6 +20,35 @@ namespace common_imgui
     void HelpMarker(const char* desc);
 }
 
+
+
+enum DrawItemColumnID
+{
+    // if (Stride == 56 && IndexCount == 912 && veWidth == 28672 && pscWidth == 592)
+    DrawItemColumnID_ID,
+    DrawItemColumnID_Stride,
+    DrawItemColumnID_IndexCount,
+    DrawItemColumnID_inWidth,
+    DrawItemColumnID_Action,
+    DrawItemColumnID_veWidth,
+    DrawItemColumnID_pscWidth
+};
+
+struct DrawItem
+{
+    int         ID;
+    int         Stride = 0;
+    int         IndexCount = 0;
+    int         veWidth = 0;
+    int         pscWidth = 0;
+    int         inWidth = 0;
+};
+
+
+static ImVector<DrawItem> table_items;
+static ImVector<int> selection;
+
+
 struct AppLog
 {
     ImGuiTextBuffer     Buf;

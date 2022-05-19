@@ -17,8 +17,6 @@
 #include <vector>
 #pragma comment(lib, "winmm.lib ")
 
-#define SAFE_RELEASE(x) if (x) { x->Release(); x = NULL; }
-#define DEPTH_BIAS_D32_FLOAT(d) (d/(1/pow(2,23)))
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -59,50 +57,11 @@ ID3D11DepthStencilState* depthStencilStateFalse;
 static ID3D11PixelShader* sGreen = NULL;
 static ID3D11PixelShader* sMagenta = NULL;
 
-static ImColor color_red = ImColor(255, 0, 0, 255);
-
 
 //wh
 ID3D11RasterizerState* DEPTHBIASState_FALSE;
 ID3D11RasterizerState* DEPTHBIASState_TRUE;
 ID3D11RasterizerState* DEPTHBIASState_ORIG;
-
-static bool p_open = false;
-static bool greetings = true;
-static bool init = false;
-static bool refresh_draw_items = false;
-static bool draw_demo = false;
-static int draw1_x = -1;
-static int draw1_y = -1;
-
-
-enum DrawItemColumnID
-{
-    // if (Stride == 56 && IndexCount == 912 && veWidth == 28672 && pscWidth == 592)
-    DrawItemColumnID_ID,
-    DrawItemColumnID_Stride,
-    DrawItemColumnID_IndexCount,
-    DrawItemColumnID_inWidth,
-    DrawItemColumnID_Action,
-    DrawItemColumnID_veWidth,
-    DrawItemColumnID_pscWidth
-};
-
-struct DrawItem
-{
-    int         ID;
-    int         Stride = 0;
-    int         IndexCount = 0;
-    int         veWidth = 0;
-    int         pscWidth = 0;
-    int         inWidth = 0;
-};
-
-static ImVector<DrawItem> table_items;
-static ImVector<int> selection;
-
-static int id_number = 0;
-static int draw_type = 0;
 
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -167,16 +126,7 @@ HRESULT GenerateShader(ID3D11Device* pD3DDevice, ID3D11PixelShader** pShader, fl
 
 
 
-static int radio_stride = -1;
-static int radio_inidex = -1;
-static int radio_width = -1;
-static int radio_psc_width = -1;
-static int step_type = 1;
-static int has_focus = 0;
 
-static int find_model_type = 0;
-static DrawItem current_item;
-static int current_count = -1;
 int aimheight = 0;
 //Viewport
 float ViewportWidth;
@@ -210,6 +160,12 @@ ID3D11Texture2D* textureGreen = nullptr;
 ID3D11ShaderResourceView* textureViewRed;
 ID3D11ShaderResourceView* textureViewGreen;
 
+ID3D11ShaderResourceView* pTextureSRV = NULL;
+ID3D11BlendState* g_pBlendStateNoBlend = NULL;
+ID3D11RasterizerState* g_pRasterizerStateSolid = NULL;
+ID3D11RasterizerState* g_pRasterizerStateWireframe = NULL;
+ID3D11DepthStencilState* g_pDepthStencilState = NULL;
+
 
 void MapBuffer(ID3D11Buffer* pStageBuffer, void** ppData, UINT* pByteWidth)
 {
@@ -236,6 +192,15 @@ void UnmapBuffer(ID3D11Buffer* pStageBuffer)
 {
     pContext->Unmap(pStageBuffer, 0);
 }
+float GetDst(float Xx, float Yy, float xX, float yY)
+{
+    return sqrt((yY - Yy) * (yY - Yy) + (xX - Xx) * (xX - Xx));
+}
+uint32_t ColorRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    return (r | (g << 8) | (b << 16) | (a << 24));
+}
+
 ID3D11Buffer* CopyBufferToCpuB(ID3D11Buffer* pBufferB)
 {
     D3D11_BUFFER_DESC CBDescB;
@@ -263,10 +228,6 @@ ID3D11Buffer* CopyBufferToCpuB(ID3D11Buffer* pBufferB)
         pContext->CopyResource(pStageBufferB, pBufferB);
 
     return pStageBufferB;
-}
-float GetDst(float Xx, float Yy, float xX, float yY)
-{
-    return sqrt((yY - Yy) * (yY - Yy) + (xX - Xx) * (xX - Xx));
 }
 ID3D11Buffer* CopyBufferToCpuA(ID3D11Buffer* pBufferA)
 {
@@ -460,7 +421,6 @@ void AddModel(ID3D11DeviceContext* pContext)
 
 }
 
-ID3D11ShaderResourceView* pTextureSRV = NULL;
 
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
@@ -736,21 +696,18 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
             pContext->RSSetState(DEPTHBIASState_TRUE);
         }
-        else
+        else if (draw_type == 7)
         {
-            // HIDE
-            //AddModel(pContext); //w2s
             return;
+        } else
+        {
+
         }
 
     }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
 }
 
-uint32_t ColorRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-    return (r | (g << 8) | (b << 16) | (a << 24));
-}
 
 void PushColor() {
     ImGui::PushID(3);
@@ -760,6 +717,9 @@ void PushColor() {
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(3 / 7.0f, 0.9f, 0.9f));
 }
 
+
+
+// TODO rebuild
 void DrawBox(ImDrawList* const draw,int x1,int y1,int x2,int y2)
 {
     draw->AddLine(ImVec2(x1, y1), ImVec2(x2, y1), color_red, 1.0f);
@@ -939,12 +899,11 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
         if (p_open)
         {
-            static const char* has_focus_val[] = { "None","FindModelType", "DrawType" ,"StepMode" };
 
             ImGui::SetNextWindowBgAlpha(bg_alpha);
             ImGui::Begin("My Windows ");
             ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::Text("Item with focus: %s", has_focus_val[has_focus]);
+            ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
 
             fov_size = 100;
             ImGui::Checkbox("DrawDemo", &draw_demo);
@@ -963,7 +922,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
             if (ImGui::CollapsingHeader("FindModel", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                const char* find_modul_val[] = { "None","FindByTable", "FindBySlider",};
 
                 
                 if ((GetAsyncKeyState(VK_UP) & 1)&& has_focus>0) {
@@ -1002,13 +960,13 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
                         switch (has_focus)
                         {
                         case 1:
-                            if (find_model_type < 2)
+                            if (find_model_type < find_modul_items_len-1)
                             {
                                 find_model_type++;
                             }
                             break;
                         case 2:
-                            if (draw_type < 6)
+                            if (draw_type < draw_type_items_len-1)
                             {
                                 draw_type++;
                             }
@@ -1027,23 +985,13 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
 
                 if (has_focus == 1) { PushColor(); };
-                ImGui::SliderInt("FindModelType: ", &find_model_type, 0, 2, find_modul_val[find_model_type], ImGuiSliderFlags_NoInput);
+                ImGui::SliderInt("FindModelType: ", &find_model_type, 0, find_modul_items_len-1, find_modul_items[find_model_type], ImGuiSliderFlags_NoInput);
                 if (has_focus == 1) { ImGui::PopStyleColor(4); ImGui::PopID(); };
                 
-                /*ImGui::Text("FindModelType: ");
-                ImGui::RadioButton("FindByTable", &find_model_type, 1); ImGui::SameLine();
-                ImGui::RadioButton("FindBySlider", &find_model_type, 2);*/
-                const char* items[] = { "None", "DrawZ", "DrawZ&DrawShaderColor", "DrawShaderColor","DrawZ&DrawTextureColor","DrawTextureColor","DrawDept", "DrawHide"};
-                /*ImGui::Combo("DrawType: ", &draw_type, items, IM_ARRAYSIZE(items));*/
                 if (has_focus == 2) { PushColor(); };
-                ImGui::SliderInt("DrawType: ", &draw_type,0, 7, items[draw_type], ImGuiSliderFlags_NoInput);
+                ImGui::SliderInt("DrawType: ", &draw_type,0, draw_type_items_len-1, draw_type_items[draw_type], ImGuiSliderFlags_NoInput);
                 if (has_focus == 2) { ImGui::PopStyleColor(4); ImGui::PopID(); };
 
-                /*ImGui::RadioButton("None", &draw_type, 0); ImGui::SameLine();
-                ImGui::RadioButton("DrawZ", &draw_type, 1); ImGui::SameLine();
-                ImGui::RadioButton("DrawZ&DrawShaderColor", &draw_type, 2); ImGui::SameLine();
-                ImGui::RadioButton("DrawShaderColor", &draw_type, 3); ImGui::SameLine();
-                ImGui::RadioButton("DrawZ&DrawTextureColor", &draw_type, 4);*/
 
                 if (find_model_type == 1)
                 {
@@ -1235,13 +1183,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         const auto draw = ImGui::GetBackgroundDrawList();
         static const auto size = ImGui::GetIO().DisplaySize;
         static const auto center = ImVec2(size.x / 2, size.y / 2);
-        /*if (draw_fov)
-            draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
-
-        if (draw_filled_fov)
-            draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
-
-        draw->AddText(ImVec2(100, 100), color_red, "this is demo");*/
 
         if (draw_demo)
         {
@@ -1272,8 +1213,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
     }
     return oPresent(pSwapChain, SyncInterval, Flags);
 }
-
-
 
 
 void impl::d3d11::init()
