@@ -473,7 +473,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
     // change the current_item
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x30) & 1))
     {
-        if (! (current_count + 1 >= table_items.size()))
+        if (current_count + 1 < table_items.size())
         {
             current_count = current_count + 1;
             current_item = table_items[current_count];
@@ -796,6 +796,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             d_desc.Usage = D3D11_USAGE_DEFAULT;
             d_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
             HRESULT hr;
+            // TODO
             static const uint32_t color_uint_red = 0xff0000ff;
             D3D11_SUBRESOURCE_DATA initDataRed = { &color_uint_red, sizeof(uint32_t), 0 };
             hr = pDevice->CreateTexture2D(&d_desc, &initDataRed, &textureRed);
@@ -806,7 +807,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
             SRVDesc.Texture2D.MipLevels = 1;
             pDevice->CreateShaderResourceView(textureRed, &SRVDesc, &textureViewRed);
-
+            
+            // TODO
             static const uint32_t color_uint_green = 0x00ff00ff;
             D3D11_SUBRESOURCE_DATA initDataGreen = { &color_uint_green, sizeof(uint32_t), 0 };
             hr = pDevice->CreateTexture2D(&d_desc, &initDataGreen, &textureGreen);
@@ -1309,7 +1311,7 @@ void impl::d3d11::init()
         Sleep(10);
     }*/
 
-    Sleep(500);
+    // Sleep(500);
 
     pDevice->Release();
     pContext->Release();
