@@ -425,7 +425,8 @@ void AddModel(ID3D11DeviceContext* pContext)
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
     bool matched = false;
-
+    
+    // TODO
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
         radio_stride++;
