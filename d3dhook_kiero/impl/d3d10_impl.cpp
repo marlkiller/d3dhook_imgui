@@ -1,5 +1,4 @@
-﻿#include "../kiero.h"
-
+﻿
 #if KIERO_INCLUDE_D3D10
 
 #include "d3d10_impl.h"

@@ -19,9 +19,6 @@
     <Filter Include="imgui_impl">
       <UniqueIdentifier>{834dffbe-28ed-4ba0-b47f-89b4d5638808}</UniqueIdentifier>
     </Filter>
-    <Filter Include="minhook">
-      <UniqueIdentifier>{b822e30b-976b-48d7-8c15-b02d6afff372}</UniqueIdentifier>
-    </Filter>
     <Filter Include="detours.X64">
       <UniqueIdentifier>{09389933-8628-4284-bbbf-8ba22e33aacb}</UniqueIdentifier>
     </Filter>
@@ -34,9 +31,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="kiero.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imconfig.h">
@@ -84,34 +78,10 @@
     <ClInclude Include="impl\win32_impl.h">
       <Filter>imgui_impl</Filter>
     </ClInclude>
-    <ClInclude Include="minhook\include\MinHook.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\buffer.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\hde\hde32.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\hde\hde64.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\hde\pstdint.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\hde\table32.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\hde\table64.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
-    <ClInclude Include="minhook\src\trampoline.h">
-      <Filter>minhook</Filter>
-    </ClInclude>
     <ClInclude Include="common_utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="global.h">
+    <ClInclude Include="imgui_constants.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="logger.h">
@@ -135,15 +105,15 @@
     <ClInclude Include="imgui\imgui_impl_opengl3.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_draw_util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="kiero.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
@@ -188,25 +158,10 @@
     <ClCompile Include="impl\win32_impl.cpp">
       <Filter>imgui_impl</Filter>
     </ClCompile>
-    <ClCompile Include="minhook\src\buffer.c">
-      <Filter>minhook</Filter>
-    </ClCompile>
-    <ClCompile Include="minhook\src\hde\hde32.c">
-      <Filter>minhook</Filter>
-    </ClCompile>
-    <ClCompile Include="minhook\src\hde\hde64.c">
-      <Filter>minhook</Filter>
-    </ClCompile>
-    <ClCompile Include="minhook\src\hook.c">
-      <Filter>minhook</Filter>
-    </ClCompile>
-    <ClCompile Include="minhook\src\trampoline.c">
-      <Filter>minhook</Filter>
-    </ClCompile>
     <ClCompile Include="common_utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="global.cpp">
+    <ClCompile Include="imgui_constants.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="logger.cpp">
@@ -224,33 +179,9 @@
     <ClCompile Include="imgui\imgui_impl_opengl3.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="minhook\.editorconfig">
-      <Filter>minhook</Filter>
-    </None>
-    <None Include="minhook\.gitignore">
-      <Filter>minhook</Filter>
-    </None>
-    <None Include="minhook\README.md">
-      <Filter>minhook</Filter>
-    </None>
-    <None Include="minhook\dll_resources\MinHook.def">
-      <Filter>minhook</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="minhook\AUTHORS.txt">
-      <Filter>minhook</Filter>
-    </Text>
-    <Text Include="minhook\LICENSE.txt">
-      <Filter>minhook</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="minhook\dll_resources\MinHook.rc">
-      <Filter>minhook</Filter>
-    </ResourceCompile>
+    <ClCompile Include="imgui_draw_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.X64\detours.lib">

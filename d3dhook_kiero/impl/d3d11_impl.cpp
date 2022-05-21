@@ -1,4 +1,4 @@
-﻿#include "../global.h"
+﻿#include "../imgui_constants.h"
 
 #include "d3d11_impl.h"
 #include <d3d11.h>

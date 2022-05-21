@@ -45,6 +45,7 @@ extern HWND GAME_HWND;
 extern struct ImColor color_red;
 extern struct ImColor color_green;
 extern struct ImColor color_blue;
+extern struct ImVec4 color_pick;
 
 
 extern int p_open;
@@ -61,7 +62,9 @@ extern bool draw_filled_fov;
 extern bool draw_double_color;
 extern int fov_size;
 extern float bg_alpha;
-
+extern float rounding;
+extern int segments;
+extern int box_type;
 
 extern int radio_stride;
 extern int radio_inidex;

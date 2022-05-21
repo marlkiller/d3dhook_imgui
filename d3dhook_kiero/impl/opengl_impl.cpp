@@ -1,4 +1,4 @@
-#include "../global.h"
+#include "../imgui_constants.h"
 #include "opengl_impl.h"
 
 #include "../imgui/imgui.h"

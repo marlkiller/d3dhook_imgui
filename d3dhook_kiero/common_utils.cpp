@@ -7,6 +7,13 @@
 namespace common_utils {
 	
 
+	int GetRandNumber(const int low, const int high)
+	{
+		int randNum = 0;
+		randNum = rand() % (high - low + 1) + low;
+		return randNum;
+	}
+
 	Enum GetDirectVersion();
 
 	const char* enum_to_string(int index) {

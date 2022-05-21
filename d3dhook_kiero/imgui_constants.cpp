@@ -1,7 +1,9 @@
 #include <wtypes.h>
 #include "imgui/imgui.h"
-#include "global.h"
+#include "imgui_constants.h"
 #include <string>
+#include "imgui_draw_util.h"
+#include "common_utils.h"
 
 
 HMODULE Dll_HWND = nullptr;
@@ -10,7 +12,8 @@ HWND GAME_HWND = nullptr;
 ImColor color_red = ImColor(255, 0, 0, 255);
 ImColor color_green = ImColor(0, 255, 0, 255);
 ImColor color_blue = ImColor(0, 0, 255, 255);
-
+ImColor color_black = ImColor(255, 255, 255, 255);
+ImVec4 color_pick = ImVec4(0.23f, 1.0f, 1.0f, 1.0f);
 
 int p_open = 0;
 bool greetings = true;
@@ -25,6 +28,10 @@ bool draw_fov = false;
 bool draw_filled_fov = false;
 int fov_size = 100;
 float bg_alpha = 0.5;
+float rounding = 6;
+int segments = 100;
+int box_type = 1;
+
 bool draw_double_color = false;
 
 
@@ -52,7 +59,7 @@ int draw_cclor_type_items_len = sizeof(draw_cclor_type_items) / sizeof(draw_cclo
 const char* find_modul_items[] = { "None","FindByTable", "FindBySlider" };
 int find_modul_items_len = sizeof(find_modul_items) / sizeof(find_modul_items[0]);
 
-const char* has_focus_items[] = { "None","FindModelType", "DrawType" ,"StepMode" };
+const char* has_focus_items[] = { "None","FindModelType", "WallHack" ,"DrawColor" ,"StepModel"};
  
 ImVector<DrawItem> table_items;
 ImVector<int> selection;
@@ -86,9 +93,6 @@ void HelpMarker(const char* desc)
 void DrawMainWin()
 {
 
-
-
-
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
     io.MouseDrawCursor = p_open;
@@ -98,12 +102,24 @@ void DrawMainWin()
 
         ImGui::SetNextWindowBgAlpha(bg_alpha);
         ImGui::Begin("My Windows ");
-        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y);
         ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
 
         ImGui::Checkbox("DrawDemo", &draw_demo);
-        ImGui::SliderFloat("BGAlpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
-        ImGui::NewLine();
+        //ImGui::ColorPicker4("##picker", (float*)&color_pick , ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_AlphaPreview);
+
+
+
+        if (draw_demo)
+        {
+            ImGui::ColorEdit4("HSV RGB ColorPick", (float*)&color_pick, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_Float| ImGuiColorEditFlags_AlphaBar);
+            ImGui::SliderFloat("BGAlpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
+            ImGui::SliderFloat("Rounding", &rounding, 0.0f, 12.0f, "rounding:%.1f");
+            ImGui::SliderInt("Segments", &segments, 0, 512, "segments:%d");
+            ImGui::SliderInt("BoxType", &box_type, 1, 6, "box_type:%d");
+            ImGui::NewLine();
+        }
+     
 
 
         if (ImGui::CollapsingHeader("FindModel", ImGuiTreeNodeFlags_DefaultOpen))
@@ -386,18 +402,47 @@ void DrawMainWin()
         ImGui::End();
     }
 
-    const auto draw = ImGui::GetBackgroundDrawList();
-    static const auto size = ImGui::GetIO().DisplaySize;
-    static const auto center = ImVec2(size.x / 2, size.y / 2);
+   
 
     if (draw_demo)
     {
-        draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
+
+
+        ImColor current_color = ImColor(color_pick);;
+
+        const auto draw = ImGui::GetBackgroundDrawList();
+        static const auto size = ImGui::GetIO().DisplaySize;
+        static const auto center = ImVec2(size.x / 2, size.y / 2);
+
+        draw->AddCircle(center, fov_size, current_color, 100);
         draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
-        draw->AddText(ImVec2(100, 100), color_red, "this is demo");
+        draw->AddText(ImVec2(100, 100), current_color, "this is text demo");
 
+
+        int start_x = 150;
+        int start_y = 150;
+        int w = 100;
+        int h = 200;
+
+        AddCircle(ImVec2(start_x, start_y), fov_size, current_color, segments); start_x += 150; start_y -= fov_size;
+        AddRectFilled(ImVec2(start_x, start_y),ImVec2(start_x+100, start_y+200), current_color, rounding); start_x += 150;
+        AddRectFilledGradient(ImVec2(start_x, start_y), ImVec2(start_x + 100, start_y + 200), color_black, color_red, color_green, color_blue); start_x += 150;
+        DrawBox(start_x, start_y, w,h, current_color); start_x += 150;
+        DrawBoxOutline(start_x, start_y, w, h, current_color); start_x += 150;
+        DrawRoundBox(start_x, start_y, w, h, current_color, rounding);
+
+        start_x = 100; start_y = 300;
+        DrawCornerBox(start_x, start_y, w, h, current_color); start_x += 150;
+        DrawEspBox(box_type, start_x, start_y, w, h, 255,255,255,255); start_x += 150;
+        DrawDot(start_x, start_y, current_color); start_x += 150;
+            
+
+        // 3D Box
+        int x1 = 650; int y1 = 350;
+        int offset = 50;
+
+        Draw3DBox(x1, y1, w, h, offset, current_color);
     }
-
 }
 
 
