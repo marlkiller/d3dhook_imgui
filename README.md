@@ -9,8 +9,7 @@ d3dhook direct kiero minhook.
 ![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/eg.gif)
 
 ### TODO
-1. Hook use Detours 
-2. Hook DX DrawIndex Virtual Table
+
 
 ## Supported Platform
 
@@ -20,6 +19,12 @@ d3dhook direct kiero minhook.
 | 9   |    ❌    |   ❌   | 
 | 10  |    ❌    |   ❌   |
 | 11  |    ✅    |   ✅   |  
+
+| OpenGL                             | x86 | x64 |
+| :---------------------------------- | :------: | :----: | 
+| 2  |    ❌    |   ❌   |
+| 3   |    ✅    |   ✅   | 
+
 
 ## Features:
 - TODO

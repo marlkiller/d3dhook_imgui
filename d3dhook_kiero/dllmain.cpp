@@ -6,36 +6,40 @@
 #include <Windows.h>
 #include "global.h"
 #include "logger.h"
+#include <iostream>
+#include "common_utils.h"
+#include "impl/opengl_impl.h"
+#include "impl/d3d11_impl.h"
 
 using namespace std;
 
-
-#if KIERO_INCLUDE_D3D9
-# include "impl/d3d9_impl.h"
-#endif
-
-#if KIERO_INCLUDE_D3D10
-# include "impl/d3d10_impl.h"
-#endif
-
-#if KIERO_INCLUDE_D3D11
-# include "impl/d3d11_impl.h"
-#endif
-#include <iostream>
-
-#if KIERO_INCLUDE_D3D12
-#endif
-#include "common_utils.h"
-
-#if KIERO_INCLUDE_OPENGL
-#endif
-
-#if KIERO_INCLUDE_VULKAN
-#endif
-
-#if !KIERO_USE_MINHOOK
-# error "The example requires that minhook be enabled!"
-#endif
+//
+//
+//#if KIERO_INCLUDE_D3D9
+//# include "impl/d3d9_impl.h"
+//#endif
+//
+//#if KIERO_INCLUDE_D3D10
+//# include "impl/d3d10_impl.h"
+//#endif
+//
+//#if KIERO_INCLUDE_D3D11
+//# include "impl/d3d11_impl.h"
+//#endif
+//
+//#if KIERO_INCLUDE_D3D12
+//#endif
+//
+//#if KIERO_INCLUDE_OPENGL
+//# include "impl/opengl_impl.h"
+//#endif
+//
+//#if KIERO_INCLUDE_VULKAN
+//#endif
+//
+//#if !KIERO_USE_MINHOOK
+//# error "The example requires that minhook be enabled!"
+//#endif
 
 #ifdef _DEBUG
 #define CONSOLE_LOGGING true
@@ -46,10 +50,11 @@ using namespace std;
 
 int mainThread()
 {
+    Enum version = OpenGL;
+    //Enum version = D3D11;
+    //Enum version = common_utils::GetDirectVersion();
+    LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
 
-    Enum version = common_utils::GetDirectVersion();
-
-    LOG_INFO("Get directX version is {%d}", version);
     switch (version)
     {
     case None:
@@ -66,7 +71,7 @@ int mainThread()
     case D3D12:
         break;
     case OpenGL:
-        break;
+        impl::opengl::init();
     case Vulkan:
         break;
     case Auto:
@@ -94,7 +99,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
                 OPEN_COONSOLE();
             }
         LOG_INFO("Platform {%s},CONSOLE_LOGGING {%d}", IS_X64 ? "x64" : "x86", CONSOLE_LOGGING);
-        global::Dll_HWND = hModule;
+        Dll_HWND = hModule;
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)mainThread, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

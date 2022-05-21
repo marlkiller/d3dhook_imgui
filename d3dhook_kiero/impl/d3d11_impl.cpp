@@ -8,7 +8,7 @@
 #include "../imgui/imgui_impl_win32.h"
 #include "../imgui/imgui_impl_dx11.h"
 #include "../logger.h"
-#include "../imgui_plugin.h"
+
 #include "../detours.h"
 #include <exception>
 #include <d3dcompiler.h>
@@ -16,9 +16,6 @@
 #include <DirectXMath.h>
 #include <vector>
 #pragma comment(lib, "winmm.lib ")
-
-
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 typedef HRESULT(__stdcall* D3D11PresentHook) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
@@ -42,9 +39,6 @@ static ID3D11DeviceContext* pContext = nullptr;
 static ID3D11RenderTargetView* mainRenderTargetView = nullptr;
 
 
-static WNDPROC OriginalWndProcHandler = nullptr;
-
-
 //wh
 UINT stencilRef = 0;
 D3D11_DEPTH_STENCIL_DESC Desc;
@@ -64,31 +58,6 @@ ID3D11RasterizerState* DEPTHBIASState_TRUE;
 ID3D11RasterizerState* DEPTHBIASState_ORIG;
 
 
-LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    //ImGuiIO& io = ImGui::GetIO();
-    /*POINT mPos;
-    GetCursorPos(&mPos);
-    ScreenToClient(global::GAME_HWND, &mPos);
-    ImGui::GetIO().MousePos.x = mPos.x;
-    ImGui::GetIO().MousePos.y = mPos.y;*/
-
-    /*if (uMsg == WM_KEYUP)
-    {
-        if (wParam == VK_INSERT)
-        {
-            p_open = !p_open;
-        }
-    }*/
-
-    if (p_open)
-    {
-        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-        return true;
-    }
-
-    return CallWindowProc(OriginalWndProcHandler, hWnd, uMsg, wParam, lParam);
-}
 HRESULT GenerateShader(ID3D11Device* pD3DDevice, ID3D11PixelShader** pShader, float r, float g, float b)
 {
     char szCast[] = "struct VS_OUT"
@@ -262,161 +231,161 @@ void AddModel(ID3D11DeviceContext* pContext)
 {
 
 
-    pContext->VSGetConstantBuffers(WorldViewCBnum, 1, &pWorldViewCB);	//WorldViewCBnum
-    pContext->VSGetConstantBuffers(ProjCBnum, 1, &pProjCB);
-    if (pWorldViewCB == nullptr)
-    {
-        OUTPUT_DEBUG(L"pWorldViewCB == nullptr");
-        SAFE_RELEASE(pWorldViewCB); return;
-    }
-    if (pProjCB == nullptr)
-    {
-        OUTPUT_DEBUG(L"pProjCB == nullptr");
-        SAFE_RELEASE(pProjCB); return;
-    }
-    if (pWorldViewCB != nullptr && pProjCB != nullptr)
-    {
-        m_pCurWorldViewCB = CopyBufferToCpuA(pWorldViewCB);
-        m_pCurProjCB = CopyBufferToCpuB(pProjCB);
-    }
-    if (m_pCurWorldViewCB == nullptr)
-    {
-        OUTPUT_DEBUG(L"m_pCurWorldViewCB == nullptr");
-        SAFE_RELEASE(m_pCurWorldViewCB); return;
-    }
-    if (m_pCurProjCB == nullptr)
-    {
-        OUTPUT_DEBUG(L"m_pCurProjCB == nullptr");
-        SAFE_RELEASE(m_pCurProjCB); return;
-    }
+    //pContext->VSGetConstantBuffers(WorldViewCBnum, 1, &pWorldViewCB);	//WorldViewCBnum
+    //pContext->VSGetConstantBuffers(ProjCBnum, 1, &pProjCB);
+    //if (pWorldViewCB == nullptr)
+    //{
+    //    OUTPUT_DEBUG(L"pWorldViewCB == nullptr");
+    //    SAFE_RELEASE(pWorldViewCB); return;
+    //}
+    //if (pProjCB == nullptr)
+    //{
+    //    OUTPUT_DEBUG(L"pProjCB == nullptr");
+    //    SAFE_RELEASE(pProjCB); return;
+    //}
+    //if (pWorldViewCB != nullptr && pProjCB != nullptr)
+    //{
+    //    m_pCurWorldViewCB = CopyBufferToCpuA(pWorldViewCB);
+    //    m_pCurProjCB = CopyBufferToCpuB(pProjCB);
+    //}
+    //if (m_pCurWorldViewCB == nullptr)
+    //{
+    //    OUTPUT_DEBUG(L"m_pCurWorldViewCB == nullptr");
+    //    SAFE_RELEASE(m_pCurWorldViewCB); return;
+    //}
+    //if (m_pCurProjCB == nullptr)
+    //{
+    //    OUTPUT_DEBUG(L"m_pCurProjCB == nullptr");
+    //    SAFE_RELEASE(m_pCurProjCB); return;
+    //}
 
-    if (m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr)
-    {
-        OUTPUT_DEBUG(L"m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr");
-        MapBuffer(m_pCurWorldViewCB, (void**)&worldview, NULL);
-        memcpy(matWorldView, &worldview[0], sizeof(matWorldView));
-        UnmapBuffer(m_pCurWorldViewCB);
-        MapBuffer(m_pCurProjCB, (void**)&proj, NULL);
-        memcpy(matProj, &proj[matProjnum], sizeof(matProj));			//matProjnum
-        UnmapBuffer(m_pCurProjCB);
-    }
+    //if (m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr)
+    //{
+    //    OUTPUT_DEBUG(L"m_pCurWorldViewCB != nullptr && m_pCurProjCB != nullptr");
+    //    MapBuffer(m_pCurWorldViewCB, (void**)&worldview, NULL);
+    //    memcpy(matWorldView, &worldview[0], sizeof(matWorldView));
+    //    UnmapBuffer(m_pCurWorldViewCB);
+    //    MapBuffer(m_pCurProjCB, (void**)&proj, NULL);
+    //    memcpy(matProj, &proj[matProjnum], sizeof(matProj));			//matProjnum
+    //    UnmapBuffer(m_pCurProjCB);
+    //}
 
-    OUTPUT_DEBUG(L"int method1 = 4");
-    int method1 = 4;
-    if (method1 == 1)
-    {
-        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
-        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+    //OUTPUT_DEBUG(L"int method1 = 4");
+    //int method1 = 4;
+    //if (method1 == 1)
+    //{
+    //    DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
+    //    DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
 
-        //normal
-        DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
+    //    //normal
+    //    DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
 
-        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
-        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
-        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
-        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+    //    float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+    //    float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+    //    float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+    //    float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
 
-        float xx, yy;
-        xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
-        yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
+    //    float xx, yy;
+    //    xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+    //    yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
 
-        OUTPUT_DEBUG(L"draw1 %d,%d,%d", xx, yy, mw);
-        draw1_x = xx;
-        draw1_y = yy;
+    //    OUTPUT_DEBUG(L"draw1 %d,%d,%d", xx, yy, mw);
+    //    draw1_x = xx;
+    //    draw1_y = yy;
 
-    }
-    if (method1 == 2)
-    {
-        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
-        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+    //}
+    //if (method1 == 2)
+    //{
+    //    DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, 0.0f, aimheight, 1.0f);
+    //    DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
 
-        //transpose
-        DirectX::XMMATRIX WorldViewProj = DirectX::XMMatrixTranspose(viewProjMatrix); //transpose
+    //    //transpose
+    //    DirectX::XMMATRIX WorldViewProj = DirectX::XMMatrixTranspose(viewProjMatrix); //transpose
 
-        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
-        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
-        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
-        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+    //    float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+    //    float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+    //    float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+    //    float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
 
-        float xx, yy;
-        xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
-        yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
+    //    float xx, yy;
+    //    xx = ((mx / mw) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+    //    yy = (ViewportHeight / 2.0f) - ((my / mw) * (ViewportHeight / 2.0f)); //- or + depends on the game
 
-        OUTPUT_DEBUG(L"draw2 %d,%d,%d", xx, yy, mw);
-        draw1_x = xx;
-        draw1_y = yy;
-    }
+    //    OUTPUT_DEBUG(L"draw2 %d,%d,%d", xx, yy, mw);
+    //    draw1_x = xx;
+    //    draw1_y = yy;
+    //}
 
   
-    if (method1 == 3)
-    {
-        //TAB worldtoscreen unity 2018
-        DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, aimheight, 0.0f, 1.0);
-        //DirectX::XMVECTOR Pos = XMVectorSet(0.0f, aimheight, preaim, 1.0);
-        DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
+    //if (method1 == 3)
+    //{
+    //    //TAB worldtoscreen unity 2018
+    //    DirectX::XMVECTOR Pos = DirectX::XMVectorSet(0.0f, aimheight, 0.0f, 1.0);
+    //    //DirectX::XMVECTOR Pos = XMVectorSet(0.0f, aimheight, preaim, 1.0);
+    //    DirectX::XMMATRIX viewProjMatrix = DirectX::XMMatrixMultiply((DirectX::FXMMATRIX)*matWorldView, (DirectX::FXMMATRIX)*matProj);//multipication order matters
 
-        //normal
-        DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
+    //    //normal
+    //    DirectX::XMMATRIX WorldViewProj = viewProjMatrix; //normal
 
-        float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
-        float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
-        float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
-        float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
+    //    float mx = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[0] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[0] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[0] + WorldViewProj.r[3].m128_f32[0];
+    //    float my = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[1] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[1] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[1] + WorldViewProj.r[3].m128_f32[1];
+    //    float mz = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[2] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[2] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[2] + WorldViewProj.r[3].m128_f32[2];
+    //    float mw = Pos.m128_f32[0] * WorldViewProj.r[0].m128_f32[3] + Pos.m128_f32[1] * WorldViewProj.r[1].m128_f32[3] + Pos.m128_f32[2] * WorldViewProj.r[2].m128_f32[3] + WorldViewProj.r[3].m128_f32[3];
 
-        if (mw > 1.0f)
-        {
-            float invw = 1.0f / mw;
-            mx *= invw;
-            my *= invw;
+    //    if (mw > 1.0f)
+    //    {
+    //        float invw = 1.0f / mw;
+    //        mx *= invw;
+    //        my *= invw;
 
-            float x = ViewportWidth / 2.0f;
-            float y = ViewportHeight / 2.0f;
+    //        float x = ViewportWidth / 2.0f;
+    //        float y = ViewportHeight / 2.0f;
 
-            x += 0.5f * mx * ViewportWidth + 0.5f;
-            y += 0.5f * my * ViewportHeight + 0.5f;//-
-            mx = x;
-            my = y;
-        }
-        else
-        {
-            mx = -1.0f;
-            my = -1.0f;
-        }
+    //        x += 0.5f * mx * ViewportWidth + 0.5f;
+    //        y += 0.5f * my * ViewportHeight + 0.5f;//-
+    //        mx = x;
+    //        my = y;
+    //    }
+    //    else
+    //    {
+    //        mx = -1.0f;
+    //        my = -1.0f;
+    //    }
 
-        OUTPUT_DEBUG(L"draw3 %d,%d,%d", mx, my, mw);
-        draw1_x = mx;
-        draw1_y = my;
-    }
+    //    OUTPUT_DEBUG(L"draw3 %d,%d,%d", mx, my, mw);
+    //    draw1_x = mx;
+    //    draw1_y = my;
+    //}
 
-    if (method1 == 4)
-    {
-        
-        //new unity incomplete, todo: fix matrix is flipped
-        //1, 2, 43
-        /*D3DXMATRIX matrix, m1;
-        D3DXVECTOR4 position;
-        D3DXVECTOR4 input;
-        D3DXMatrixMultiply(&matrix, (D3DXMATRIX*)matWorldView, (D3DXMATRIX*)matProj);
+    //if (method1 == 4)
+    //{
+    //    
+    //    //new unity incomplete, todo: fix matrix is flipped
+    //    //1, 2, 43
+    //    /*D3DXMATRIX matrix, m1;
+    //    D3DXVECTOR4 position;
+    //    D3DXVECTOR4 input;
+    //    D3DXMatrixMultiply(&matrix, (D3DXMATRIX*)matWorldView, (D3DXMATRIX*)matProj);
 
-        D3DXMatrixTranspose(&matrix, &matrix);
+    //    D3DXMatrixTranspose(&matrix, &matrix);
 
-        position.x = input.x * matrix._11 + input.y * matrix._12 + input.z * matrix._13 + input.w * matrix._14;
-        position.y = input.x * matrix._21 + input.y * matrix._22 + input.z * matrix._23 + input.w * matrix._24;
-        position.z = input.x * matrix._31 + input.y * matrix._32 + input.z * matrix._33 + input.w * matrix._34;
-        position.w = input.x * matrix._41 + input.y * matrix._42 + input.z * matrix._43 + input.w * matrix._44;
+    //    position.x = input.x * matrix._11 + input.y * matrix._12 + input.z * matrix._13 + input.w * matrix._14;
+    //    position.y = input.x * matrix._21 + input.y * matrix._22 + input.z * matrix._23 + input.w * matrix._24;
+    //    position.z = input.x * matrix._31 + input.y * matrix._32 + input.z * matrix._33 + input.w * matrix._34;
+    //    position.w = input.x * matrix._41 + input.y * matrix._42 + input.z * matrix._43 + input.w * matrix._44;
 
-        float xx, yy;
-        xx = ((position.x / position.w) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
-        yy = (ViewportHeight / 2.0f) + ((position.y / position.w) * (ViewportHeight / 2.0f));
+    //    float xx, yy;
+    //    xx = ((position.x / position.w) * (ViewportWidth / 2.0f)) + (ViewportWidth / 2.0f);
+    //    yy = (ViewportHeight / 2.0f) + ((position.y / position.w) * (ViewportHeight / 2.0f));
 
-        AimEspInfo_t pAimEspInfo = { static_cast<float>(xx), static_cast<float>(yy), static_cast<float>(position.w) };
-        AimEspInfo.push_back(pAimEspInfo);
-        
-        OUTPUT_DEBUG(L"draw4 %d,%d,%d", xx, yy, mw);*/
+    //    AimEspInfo_t pAimEspInfo = { static_cast<float>(xx), static_cast<float>(yy), static_cast<float>(position.w) };
+    //    AimEspInfo.push_back(pAimEspInfo);
+    //    
+    //    OUTPUT_DEBUG(L"draw4 %d,%d,%d", xx, yy, mw);*/
 
-        draw1_x = 200;
-        draw1_y = 300;
-    }
+    //    draw1_x = 200;
+    //    draw1_y = 300;
+    //}
 
 
 }
@@ -476,6 +445,7 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
     {
         if (current_count + 1 < table_items.size())
         {
+          
             current_count = current_count + 1;
             current_item = table_items[current_count];
             OUTPUT_DEBUG(L"current_count %d/%d --> ( %d,%d,%d,%d,%d)", table_items.size(), current_count + 1, current_item.Stride, current_item.IndexCount, current_item.inWidth, current_item.veWidth, current_item.pscWidth);
@@ -537,9 +507,9 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
         pscBuffer = NULL;
     }
 
-
     if (refresh_draw_items)
     {
+
         bool exist = false;
         ImVector<DrawItem>::iterator it;
         for (it = table_items.begin(); it != table_items.end(); it++)
@@ -632,102 +602,84 @@ void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, U
             }
         }
     }
-    if (matched && draw_type > 0)
+    if (matched && (wall_hack_type > 0 || draw_cclor_type>0))
     {
-        if (draw_type == 1 || draw_type == 2) {
-             
+        if (wall_hack_type==0)
+        {
+            draw_double_color = false;
+        }
+        // wall z
+        if (wall_hack_type==1)
+        {
             pContext->OMGetDepthStencilState(&oDepthStencilState, &stencilRef); //need stencilref for optimisation later
             pContext->OMSetDepthStencilState(depthStencilStateFalse, 0); //depth off
-            if (draw_type == 2)
-            {
+        }
+        else if (wall_hack_type == 2) // revert dept
+        {
+            pContext->RSSetState(DEPTHBIASState_FALSE);
+        }
+        else if (wall_hack_type==3)
+        {
+            return;
+        }
+        if (draw_cclor_type == 1)
+        {
+            if (draw_double_color){
                 pContext->PSSetShader(sMagenta, NULL, NULL);
             }
-            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef); //depth on
-            if (draw_type == 2)
-            {
-                pContext->PSSetShader(sGreen, NULL, NULL); // If you want all red,plz fuck this line;
-            }
-            SAFE_RELEASE(oDepthStencilState);
-        }
-        else if (draw_type == 3)
-        {
-            pContext->PSSetShader(sGreen, NULL, NULL);
-            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            // return after draw ? Prevent secondary rendering ?
-        }
-        else if (draw_type == 4 || draw_type == 5)
-        {
-
-            if (draw_type == 5)
-            {
-                pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef);
-                SAFE_RELEASE(oDepthStencilState);
-
-                for (int x1 = 0; x1 <= 10; x1++)
-                {
-                    pContext->PSSetShaderResources(x1, 1, &textureViewGreen);
-                }
-                pContext->PSSetSamplers(0, 1, &pSamplerState);
-                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            }
             else {
-                pContext->OMGetDepthStencilState(&oDepthStencilState, &stencilRef); //need stencilref for optimisation later
-                pContext->OMSetDepthStencilState(depthStencilStateFalse, 0);
+                pContext->PSSetShader(sGreen, NULL, NULL);
+            }
+        }
+        else if (draw_cclor_type == 2)
+        {
+            if (draw_double_color) {
                 for (int x1 = 0; x1 <= 10; x1++)
                 {
                     pContext->PSSetShaderResources(x1, 1, &textureViewRed);
                 }
-                pContext->PSSetSamplers(0, 1, &pSamplerState);
-                oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-                pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef);
-                SAFE_RELEASE(oDepthStencilState);
+            }
+            else {
+                for (int x1 = 0; x1 <= 10; x1++)
+                {
+                    pContext->PSSetShaderResources(x1, 1, &textureViewGreen);
+                }
+            }
+            pContext->PSSetSamplers(0, 1, &pSamplerState);
+        }
 
+        oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
+
+
+        if (wall_hack_type == 1) {
+            pContext->OMSetDepthStencilState(oDepthStencilState, stencilRef); //depth on
+            SAFE_RELEASE(oDepthStencilState);
+        }
+        else if (wall_hack_type==2)
+        {
+            pContext->RSSetState(DEPTHBIASState_TRUE);
+        }
+
+        if (draw_double_color)
+        {
+            if (draw_cclor_type == 1) {
+                pContext->PSSetShader(sGreen, NULL, NULL);
+            }
+            else if (draw_cclor_type == 2)
+            {
                 for (int x1 = 0; x1 <= 10; x1++)
                 {
                     pContext->PSSetShaderResources(x1, 1, &textureViewGreen);
                 }
                 pContext->PSSetSamplers(0, 1, &pSamplerState);
             }
-         
         }
-        else if(draw_type == 6){
-            pContext->RSSetState(DEPTHBIASState_FALSE);
-            //pContext->PSSetShader(sGreen, NULL, NULL);
-            oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation); //redraw
-            pContext->RSSetState(DEPTHBIASState_TRUE);
-        }
-        else if (draw_type == 7)
-        {
-            return;
-        } else
-        {
-
-        }
+        
 
     }
     return oDrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
 }
 
-
-void PushColor() {
-    ImGui::PushID(3);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(3 / 7.0f, 0.5f, 0.5f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(3 / 7.0f, 0.6f, 0.5f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(3 / 7.0f, 0.7f, 0.5f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(3 / 7.0f, 0.9f, 0.9f));
-}
-
-
-
-// TODO rebuild
-void DrawBox(ImDrawList* const draw,int x1,int y1,int x2,int y2)
-{
-    draw->AddLine(ImVec2(x1, y1), ImVec2(x2, y1), color_red, 1.0f);
-    draw->AddLine(ImVec2(x2, y1), ImVec2(x2, y2), color_red, 1.0f);
-    draw->AddLine(ImVec2(x2, y2), ImVec2(x1, y2), color_red, 1.0f);
-    draw->AddLine(ImVec2(x1, y2), ImVec2(x1, y1), color_red, 1.0f);
-}
 
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
@@ -745,15 +697,15 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
             pDevice->GetImmediateContext(&pContext);
 
             //impl::win32::init(desc.OutputWindow);
-            global::GAME_HWND = desc.OutputWindow;
+            GAME_HWND = desc.OutputWindow;
             ImGui::CreateContext();
             ImGui_ImplWin32_Init(desc.OutputWindow);
             ImGui_ImplDX11_Init(pDevice, pContext);
             ID3D11Texture2D* pBackBuffer;
             pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
             pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-            OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
-            LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, OriginalWndProcHandler);
+            oWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
+            LOG_INFO("Init with {%d},{%d},{%d},{%d}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, oWndProcHandler);
 
             //create depthstencilstate
             // DEPTH FALSE
@@ -863,12 +815,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ImGui::NewFrame();
 
 
-        static bool draw_fov = false;
-        static bool draw_filled_fov = false;
-        static int fov_size = 0;
-        static float bg_alpha = 0.5;
+        
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-        // greetings
+        // greetings TODO
         if (greetings)
         {
             float sub_win_width = 300;
@@ -891,322 +840,19 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         }
 
 
-        //ImGuiIO& io = ImGui::GetIO();
-        POINT mPos;
+        /*POINT mPos;
         GetCursorPos(&mPos);
-        ScreenToClient(global::GAME_HWND, &mPos);
+        ScreenToClient(GAME_HWND, &mPos);
         ImGui::GetIO().MousePos.x = mPos.x;
-        ImGui::GetIO().MousePos.y = mPos.y;
-        if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
-        io.MouseDrawCursor = p_open;
+        ImGui::GetIO().MousePos.y = mPos.y*/;
 
-        if (p_open)
-        {
-
-            ImGui::SetNextWindowBgAlpha(bg_alpha);
-            ImGui::Begin("My Windows ");
-            ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
-
-            fov_size = 100;
-            ImGui::Checkbox("DrawDemo", &draw_demo);
-           /* if (ImGui::Checkbox("DrawFOV", &draw_fov))
-            {
-                if (draw_fov && !fov_size)
-                {
-                    fov_size = 100;
-                }
-            }
-            ImGui::Checkbox("DrawFilledFOV", &draw_filled_fov);
-            ImGui::SliderInt("FovSize", &fov_size, 0, 200, "fov_size:%d");*/
-            ImGui::SliderFloat("BGAlpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
-            ImGui::NewLine();
-
-
-            if (ImGui::CollapsingHeader("FindModel", ImGuiTreeNodeFlags_DefaultOpen))
-            {
-
-                
-                if ((GetAsyncKeyState(VK_UP) & 1)&& has_focus>0) {
-                    has_focus--;
-                }else if ((GetAsyncKeyState(VK_DOWN) & 1)&& has_focus<3) {
-                    has_focus++;
-                }
-                if (has_focus>0 )
-                {
-                    if (GetAsyncKeyState(VK_LEFT) & 1) {
-                        switch (has_focus)
-                        {
-                        case 1:
-                            if (find_model_type > 0)
-                            {
-                                find_model_type--;
-                            }
-                            break;
-                        case 2:
-                            if (draw_type > 0)
-                            {
-                                draw_type--;
-                            }
-                            break;
-                        case 3:
-                            if (step_type > 0)
-                            {
-                                step_type--;
-                            }
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                    else if (GetAsyncKeyState(VK_RIGHT) & 1) {
-                        switch (has_focus)
-                        {
-                        case 1:
-                            if (find_model_type < find_modul_items_len-1)
-                            {
-                                find_model_type++;
-                            }
-                            break;
-                        case 2:
-                            if (draw_type < draw_type_items_len-1)
-                            {
-                                draw_type++;
-                            }
-                            break;
-                        case 3:
-                            if (step_type < 3)
-                            {
-                                step_type++;
-                            }
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                }
-
-
-                if (has_focus == 1) { PushColor(); };
-                ImGui::SliderInt("FindModelType: ", &find_model_type, 0, find_modul_items_len-1, find_modul_items[find_model_type], ImGuiSliderFlags_NoInput);
-                if (has_focus == 1) { ImGui::PopStyleColor(4); ImGui::PopID(); };
-                
-                if (has_focus == 2) { PushColor(); };
-                ImGui::SliderInt("DrawType: ", &draw_type,0, draw_type_items_len-1, draw_type_items[draw_type], ImGuiSliderFlags_NoInput);
-                if (has_focus == 2) { ImGui::PopStyleColor(4); ImGui::PopID(); };
-
-
-                if (find_model_type == 1)
-                {
-                    if (ImGui::CollapsingHeader("FindByTable", ImGuiTreeNodeFlags_DefaultOpen))
-                    {
-                        ImGui::Checkbox("RefreshDrawData", &refresh_draw_items); // TODO Auto stop ??
-
-                        static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
-                        
-                        if (current_count<=-1)
-                        {
-                            ImGui::Text("-> Plz type Alt+0/Ctrl+0 select: "); 
-                        }
-                        else {
-                            ImGui::Text("-> %d: ( %d ,%d ,%d ,%d )", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth); ImGui::SameLine();
-                            ImGui::SameLine();
-                            if (ImGui::Button("Copy"))
-                            {
-                                char result_str[100];
-                                std::string result_s;
-                                sprintf(result_str, "%d: %d,%d,%d,%d", current_count + 1, current_item.Stride, current_item.IndexCount, current_item.veWidth, current_item.pscWidth);
-                                result_s = result_str;
-
-                                if (::OpenClipboard(NULL))
-                                {
-                                    ::EmptyClipboard();
-                                    HGLOBAL clipbuffer;
-                                    char* buffer;
-                                    clipbuffer = ::GlobalAlloc(GMEM_DDESHARE, strlen(result_s.c_str()) + 1);
-                                    buffer = (char*)::GlobalLock(clipbuffer);
-                                    strcpy(buffer, result_s.c_str());
-                                    ::GlobalUnlock(clipbuffer);
-                                    ::SetClipboardData(CF_TEXT, clipbuffer);
-                                    ::CloseClipboard();
-                                }
-                            }
-                        }
-                        if (ImGui::BeginTable("BableAdvanced", 8, flags, ImVec2(0, 0), 0.0f))
-                        {
-                            ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_ID);
-                            ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0.0f, DrawItemColumnID_Stride);
-                            ImGui::TableSetupColumn("IndexCount", ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_IndexCount);
-                            ImGui::TableSetupColumn("inWidth", ImGuiTableColumnFlags_DefaultHide, 0.0f, DrawItemColumnID_inWidth); // TODB TBD
-                            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed, 0.0f, DrawItemColumnID_Action);// TODB TBD
-                            ImGui::TableSetupColumn("veWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_veWidth);
-                            ImGui::TableSetupColumn("pscWidth", ImGuiTableColumnFlags_NoSort, 0.0f, DrawItemColumnID_pscWidth);
-                            ImGui::TableSetupColumn("Hidden", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_NoSort);// TODB TBD
-                            ImGui::TableSetupScrollFreeze(1, 1);
-                            ImGui::TableHeadersRow();
-                            ImGui::PushButtonRepeat(true);
-
-                            // Demonstrate using clipper for large vertical lists
-                            ImGuiListClipper clipper;
-                            clipper.Begin(table_items.Size);
-                            while (clipper.Step())
-                            {
-                                for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
-                                {
-                                    DrawItem* item = &table_items[row_n];
-                                    //if (!filter.PassFilter(item->Name))
-                                    //    continue;
-                                    const bool item_is_selected = selection.contains(item->ID);
-                                    ImGui::PushID(item->ID);
-                                    ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
-
-                                    // For the demo purpose we can select among different type of items submitted in the first column
-                                    ImGui::TableSetColumnIndex(0);
-                                    char label[32];
-                                    sprintf(label, "%d", item->ID);
-                                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                                    if (ImGui::Selectable(label, item_is_selected, selectable_flags, ImVec2(0, 0)))
-                                    {
-                                        selection.clear();
-                                        selection.push_back(item->ID);
-                                    }
-
-                                    if (ImGui::TableSetColumnIndex(1))
-                                        ImGui::Text("%d", item->Stride);
-
-                                    if (ImGui::TableSetColumnIndex(2))
-                                        ImGui::Text("%d", item->IndexCount);
-
-                                    if (ImGui::TableSetColumnIndex(3))
-                                        ImGui::Text("%d", item->inWidth);
-
-                                    if (ImGui::TableSetColumnIndex(4))
-                                    {
-                                        if (ImGui::SmallButton("SELECT")) {}
-                                        ImGui::SameLine();
-                                        if (ImGui::SmallButton("CLEAN")) {}
-                                    }
-
-                                    if (ImGui::TableSetColumnIndex(5))
-                                        ImGui::Text("%d", item->veWidth);
-
-                                    if (ImGui::TableSetColumnIndex(6))
-                                        ImGui::Text("%d", item->pscWidth);
-
-                                    if (ImGui::TableSetColumnIndex(7))
-                                        ImGui::Text("");
-
-                                    ImGui::PopID();
-                                }
-                            }
-                            ImGui::PopButtonRepeat();
-                            ImGui::EndTable();
-                        }
-                    }
-                } else if (find_model_type == 2)
-                {
-                    if (ImGui::CollapsingHeader("FindBySlider", ImGuiTreeNodeFlags_DefaultOpen))
-                    {
-                        if (has_focus == 3) { PushColor(); };
-                        ImGui::SliderInt("StepMode", &step_type, 1, 3, "Step Mode:%d");
-                        if (has_focus == 3) { ImGui::PopStyleColor(4); ImGui::PopID(); };
-
-                        if (step_type == 1)
-                        {
-                            ImGui::Text("Mode 1 (IndexCount/10 & veWidth/100 & pscWidth/1)");
-                        }
-                        else if (step_type == 2)
-                        {
-                            ImGui::Text("Mode 1 (IndexCount/100 & veWidth/1000 & pscWidth/10)");
-                        }
-                        else if (step_type == 3)
-                        {
-                            ImGui::Text("Mode 1 (IndexCount/1000 & veWidth/10000 & pscWidth/100)");
-                        }
-                        ImGui::SliderInt("Stride", &radio_stride, -1, 100, "Stride:%d"); /*if (ImGui::IsItemActive()) { has_focus = 4; }; */ImGui::SameLine(); common_imgui::HelpMarker("Alt + 1 (add)| Ctrl + 1 (min)");
-                        ImGui::SliderInt("IndexCount", &radio_inidex, -1, 100, "IndexCount:%d");/* if (ImGui::IsItemActive()) { has_focus = 5; };*/ ImGui::SameLine(); common_imgui::HelpMarker("Alt + 2 (add)| Ctrl + 2 (min)");
-                        ImGui::SliderInt("veWidth", &radio_width, -1, 100, "veWidth:%d"); /*if (ImGui::IsItemActive()) { has_focus = 6; };*/ ImGui::SameLine(); common_imgui::HelpMarker("Alt + 3 (add)| Ctrl + 3 (min)");
-                        ImGui::SliderInt("pscWidth", &radio_psc_width, -1, 100, "pscWidth:%d"); /*if (ImGui::IsItemActive()) { has_focus = 7; };*/ ImGui::SameLine(); common_imgui::HelpMarker("Alt + 4 (add)| Ctrl + 4 (min)");
-                        
-
-                    }
-                }
-
-                
-            }
-            ImGui::PushID(1);
-            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(7.0f, 0.6f, 0.6f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(7.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(7.0f, 0.8f, 0.8f));
-            ImGui::NewLine();
-            if (ImGui::Button("Detach"))
-            {
-                ImGui::End();
-                ImGui::EndFrame();
-                ImGui::Render();
-                pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-                ImGui_ImplDX11_Shutdown();
-                ImGui_ImplWin32_Shutdown();
-                ImGui::DestroyContext();
-
-                SetWindowLongPtr(global::GAME_HWND, WNDPROC_INDEX, (LONG_PTR)OriginalWndProcHandler);
-                LOG_INFO("Detach with {%d},{%d},{%d}", global::GAME_HWND, WNDPROC_INDEX, OriginalWndProcHandler);
-                {
-                    try
-                    {
-                        sGreen->Release();
-                        sMagenta->Release();
-                        SAFE_RELEASE(depthStencilStateFalse);
-                        DetourTransactionBegin();
-                        DetourUpdateThread(GetCurrentThread());
-                        DetourDetach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
-                        DetourDetach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
-                        DetourTransactionCommit();
-                        FreeLibrary(global::Dll_HWND);
-
-                    }
-                    catch (...)
-                    {
-                        std::exception_ptr p = std::current_exception();
-                        LOG_ERROR("ERROR");
-                        LOG_ERROR("ERROR : {%s}", p);
-                        throw;
-                    }
-                }
-                // TODO return void??
-                return oPresent(pSwapChain, SyncInterval, Flags);
-            }
-            ImGui::PopStyleColor(3);
-            ImGui::PopID();
-            ImGui::End();
-        }
-
-        const auto draw = ImGui::GetBackgroundDrawList();
-        static const auto size = ImGui::GetIO().DisplaySize;
-        static const auto center = ImVec2(size.x / 2, size.y / 2);
-
-        if (draw_demo)
-        {
-            draw->AddCircle(center, fov_size, ImColor(255, 255, 255), 100);
-            draw->AddCircleFilled(center, fov_size, ImColor(0, 0, 0, 140), 100);
-            draw->AddText(ImVec2(100, 100), color_red, "this is demo");
-
-            // draw box
-            int x1 = 100; int y1 = 100; int x2 = 200; int y2 = 300; 
-            DrawBox(draw, x1, y1, x2, y2);
-
-            // draw 3d box
-
-        }
+        DrawMainWin();
 
         ImGui::EndFrame();
         ImGui::Render();
         pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        //OUTPUT_DEBUG(L"init {%d},greetings {%d},p_open {%d}, draw_fov {%d},draw_filled_fov {%d}\n", init, greetings, p_open, draw_fov, draw_filled_fov);
         }
     catch (...) {
         std::exception_ptr p = std::current_exception();
@@ -1277,7 +923,7 @@ void impl::d3d11::init()
         &obtainedLevel,
         &pContext)))
     {
-        MessageBox(hWnd, "Failed to create directX device and swapchain!", "Error", MB_ICONERROR);
+        //MessageBox(hWnd, "Failed to create directX device and swapchain!", "Error", MB_ICONERROR);
         return;
     }
 
@@ -1295,6 +941,8 @@ void impl::d3d11::init()
     oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
 
     LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%d}, oDrawIndexed{%d}",oPresent,oDrawIndexed);
+
+    //kiero::bind(8, (void**)&oPresent, hkPresent11);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

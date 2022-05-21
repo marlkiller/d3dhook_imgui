@@ -20,4 +20,6 @@ enum Enum
 
 namespace common_utils {
     Enum GetDirectVersion();
+    const char* enum_to_string(int type);
+
 }

@@ -5,8 +5,14 @@
 
 
 namespace common_utils {
+	
+
 	Enum GetDirectVersion();
 
+	const char* enum_to_string(int index) {
+		const char* enum_vals[] = { "None", "D3D9", "D3D10", "D3D11", "D3D12", "OpenGL", "Vulkan" };
+		return  enum_vals[index];
+	}
 
 	Enum GetDirectVersion() {
 
