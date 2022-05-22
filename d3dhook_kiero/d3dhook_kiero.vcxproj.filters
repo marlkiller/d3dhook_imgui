@@ -108,6 +108,12 @@
     <ClInclude Include="imgui_draw_util.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="imgui\GL.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\GLU.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

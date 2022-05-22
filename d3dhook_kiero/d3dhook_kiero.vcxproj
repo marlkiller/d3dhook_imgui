@@ -157,6 +157,8 @@
     <ClInclude Include="common_utils.h" />
     <ClInclude Include="detours.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="imgui\GL.h" />
+    <ClInclude Include="imgui\GLU.h" />
     <ClInclude Include="imgui_constants.h" />
     <ClInclude Include="imgui\gl3w.h" />
     <ClInclude Include="imgui\glcorearb.h" />

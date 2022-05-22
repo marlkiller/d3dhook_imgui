@@ -394,19 +394,12 @@ void AddModel(ID3D11DeviceContext* pContext)
 void __stdcall hkDrawIndexed11(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 {
     bool matched = false;
-    
-    // TODO
+    //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
+
+    // change the Stride
     if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
         radio_stride++;
-    }
-
-    //OUTPUT_DEBUG(L"hkDrawIndexed11 >> IndexCount %d ,StartIndexLocation %d ,BaseVertexLocation %d\n", IndexCount, StartIndexLocation, BaseVertexLocation);
-    // TODO mov key operation log in hkDrawIndexedInstancedIndirect?
-    // change the stride 
-    if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(0x35) & 1))
-    {
-        find_model_type = 2;
     }
     if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(0x31) & 1))
     {
