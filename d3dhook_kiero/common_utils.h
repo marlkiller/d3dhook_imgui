@@ -22,5 +22,4 @@ namespace common_utils {
     int GetRandNumber(const int low, const int high);
     Enum GetDirectVersion();
     const char* enum_to_string(int type);
-
 }

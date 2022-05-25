@@ -104,12 +104,9 @@ void DrawMainWin()
         ImGui::Begin("My Windows ");
         ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y);
         ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
-
+        
         ImGui::Checkbox("DrawDemo", &draw_demo);
         //ImGui::ColorPicker4("##picker", (float*)&color_pick , ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_AlphaPreview);
-
-
-
         if (draw_demo)
         {
             ImGui::ColorEdit4("HSV RGB ColorPick", (float*)&color_pick, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_Float| ImGuiColorEditFlags_AlphaBar);
@@ -408,7 +405,7 @@ void DrawMainWin()
     {
 
 
-        ImColor current_color = ImColor(color_pick);;
+        ImColor current_color = ImColor(color_pick);
 
         const auto draw = ImGui::GetBackgroundDrawList();
         static const auto size = ImGui::GetIO().DisplaySize;

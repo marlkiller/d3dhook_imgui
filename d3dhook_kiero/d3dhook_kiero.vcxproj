@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -159,6 +159,15 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="imgui\GL.h" />
     <ClInclude Include="imgui\GLU.h" />
+    <ClInclude Include="imgui\image_DXT.h" />
+    <ClInclude Include="imgui\image_helper.h" />
+    <ClInclude Include="imgui\soil.h" />
+    <ClInclude Include="imgui\stbi_DDS_aug.h" />
+    <ClInclude Include="imgui\stbi_DDS_aug_c.h" />
+    <ClInclude Include="imgui\stb_image_aug.h" />
+    <ClInclude Include="imgui\stb_rect_pack.h" />
+    <ClInclude Include="imgui\stb_textedit.h" />
+    <ClInclude Include="imgui\stb_truetype.h" />
     <ClInclude Include="imgui_constants.h" />
     <ClInclude Include="imgui\gl3w.h" />
     <ClInclude Include="imgui\glcorearb.h" />
@@ -182,11 +191,17 @@
     <ClInclude Include="impl\shared.h" />
     <ClInclude Include="impl\win32_impl.h" />
     <ClInclude Include="logger.h" />
+    <ClInclude Include="memory.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common_utils.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="imgui\image_DXT.cpp" />
+    <ClCompile Include="imgui\image_helper.cpp" />
+    <ClCompile Include="imgui\soil.cpp" />
+    <ClCompile Include="imgui\stb_image_aug.cpp" />
     <ClCompile Include="imgui_constants.cpp" />
     <ClCompile Include="imgui\gl3w.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -220,6 +235,14 @@
     <Library Include="detours.X64\syelog.lib" />
     <Library Include="detours.X86\detours.lib" />
     <Library Include="detours.X86\syelog.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="d3dhook_kiero.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\..\..\Pictures\DIY.jpg" />
+    <Image Include="..\..\..\..\..\Pictures\green_buffer.png" />
+    <Image Include="..\..\..\..\..\Pictures\red_buffer.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

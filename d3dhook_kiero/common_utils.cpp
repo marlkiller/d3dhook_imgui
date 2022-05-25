@@ -2,6 +2,7 @@
 #include "common_utils.h"
 #include <iostream>
 #include <Windows.h>
+#include "logger.h"
 
 
 namespace common_utils {
@@ -20,6 +21,7 @@ namespace common_utils {
 		const char* enum_vals[] = { "None", "D3D9", "D3D10", "D3D11", "D3D12", "OpenGL", "Vulkan" };
 		return  enum_vals[index];
 	}
+
 
 	Enum GetDirectVersion() {
 

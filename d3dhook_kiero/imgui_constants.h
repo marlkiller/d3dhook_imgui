@@ -3,6 +3,7 @@
 #include "imgui/imgui.h"
 //#include "plugins.h"
 #pragma comment(lib,"d3d11.lib")
+#include "resource.h"
 
 
 enum DrawItemColumnID
