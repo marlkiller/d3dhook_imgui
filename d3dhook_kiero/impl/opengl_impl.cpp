@@ -107,8 +107,11 @@ HANDLE g_hProcess;
 DWORD cstrike_base;
 
 const DWORD el_num_base = 0x620FCC; //cstrike.exe + 620FCC          //游戏中除了自己其他人人数
- const DWORD Control_CursorAngle_X_offset = 0x19E10C8;			//鼠标x角度
-const DWORD Control_CursorAngle_Y_offset = 0x19E10C4;			//鼠标y角度
+const DWORD Control_CursorAngle_X_offset = 0x19E10C8;			//鼠标x角度 水平朝向
+const DWORD Control_CursorAngle_Y_offset = 0x19E10C4;			//鼠标y角度 高低朝向
+const DWORD Control_CursorAngle_FOV_X = 0x195fe58;			//鼠标x角度 水平朝向
+const DWORD Control_CursorAngle_FOV_Y = 0x195fe5C;			//鼠标y角度 高低朝向
+const DWORD Control_CursorAngle_FOV_Z = 0x195fe60;			//鼠标y角度 高低朝向
 
 typedef struct PlayerData
 {
@@ -184,91 +187,84 @@ void DrawOpenGLDIY() {
 		ImGui::Begin("OpenGLDraw");
 		ImGui::Checkbox("DrawESP", &enable_draw_esp);
 		ImGui::End();
-
 	}
 
 	if (!enable_draw_esp)
-	{
 		return;
-	}
 	PlayerData my_data = { 0 };
 	ReadDataList(0, &my_data);
 	
 	if (my_data.hp <= 1 || my_data.hp > 100) // FIXME Alive
-	{
 		return;
-	}
-
-	OUTPUT_DEBUG(L"my_data.hp > %f", my_data.hp);
 
 	int numb = 0;
 	memcpy(&numb, (PBYTE*)(cstrike_base + el_num_base), sizeof(numb));
 
-	float CursorAngle_X;
-	float CursorAngle_Y;
+	float CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z;
+
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_X_offset), &CursorAngle_X, sizeof(CursorAngle_X), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_Y_offset), &CursorAngle_Y, sizeof(CursorAngle_Y), 0);
+	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_X), &CursorAngle_FOV_X, sizeof(CursorAngle_FOV_X), 0);
+	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Y), &CursorAngle_FOV_Y, sizeof(CursorAngle_FOV_Y), 0);
+	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Z), &CursorAngle_FOV_Z, sizeof(CursorAngle_FOV_Z), 0);
+
+	OUTPUT_DEBUG(L"my_data > %f,%f,%f,%f,%f,%f", my_data.hp, CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z);
 
 	for (int i = 1; i <= numb; i++)
 	{
+		float size_x = 1024; // TODO
+		float size_y = 768;
 		PlayerData el_data = { 0 };
 		ReadDataList(i, &el_data);
-		
+		float target_face_x, target_face_y, diff_face_x, diff_face_y;
 
-		float diff_x, diff_y, diff_z,diff_mouse;
-		diff_x = my_data.position[0] - el_data.position[0];
-		diff_y = my_data.position[1] - el_data.position[1];
-		diff_z = my_data.position[2] - el_data.position[2];
-		float angle_x = 0;
-		if (diff_x<0 && diff_y<0)
-			angle_x = atan(abs(diff_y / diff_x)) / PI * 180;
-		else if (diff_x < 0 && diff_y==0)
-			angle_x =0;
-		else if (diff_x == 0 && diff_y < 0)
-			angle_x = 90;
-		else if (diff_x > 0 && diff_y < 0)
-			angle_x = 90 + atan(abs(diff_x/diff_y))/PI*180;
-		else if (diff_x > 0 && diff_y == 0)
-			angle_x = 180;
-		else if (diff_x > 0 && diff_y > 0)
-			angle_x = 180 + atan(abs(diff_y/diff_x))/PI*180;
-		else if (diff_x == 0 && diff_y > 0)
-			angle_x = 270;
-		else if (diff_x < 0 && diff_y > 0)
-			angle_x = 270 + atan(abs(diff_x	/diff_y))/PI* 180;
+		if (el_data.position[0] > CursorAngle_FOV_X && el_data.position[1] >= CursorAngle_FOV_Y)//第一象限
+			target_face_x = (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, el_data.position[0] - CursorAngle_FOV_X) * 180 / 3.1415);
+		else if (el_data.position[0] <= CursorAngle_FOV_X && el_data.position[1] > CursorAngle_FOV_Y)//第二象限
+			target_face_x = 180 - (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, CursorAngle_FOV_X - el_data.position[0]) * 180 / 3.1415);
+		else if (el_data.position[0] < CursorAngle_FOV_X && el_data.position[1] <= CursorAngle_FOV_Y)//第三象限
+			target_face_x = 180 + (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], CursorAngle_FOV_X - el_data.position[0]) * 180 / 3.1415);
+		else if (el_data.position[0] >= CursorAngle_FOV_X && el_data.position[1] < CursorAngle_FOV_Y)//第四象限
+			target_face_x = 360 - (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], el_data.position[0] - CursorAngle_FOV_X) * 180 / 3.1415);
+		else 
+			continue;
+		float distance = sqrt((el_data.position[0] - CursorAngle_FOV_X) * (el_data.position[0] - CursorAngle_FOV_X) + (CursorAngle_FOV_Y - el_data.position[1]) * (CursorAngle_FOV_Y - el_data.position[1]));
+		float distance_3d = sqrt(pow(my_data.position[0] - el_data.position[0], 2) + pow(my_data.position[1] - el_data.position[1], 2) + pow(my_data.position[2] - el_data.position[2], 2));
+		if (el_data.position[2] > CursorAngle_FOV_Z)//上方
+			target_face_y = (FLOAT)(-(double)atan2(el_data.position[2] - CursorAngle_FOV_Z, distance) * 180 / 3.1415);
+		else if (el_data.position[2] < CursorAngle_FOV_Z)//下方
+			target_face_y = (FLOAT)((double)atan2(CursorAngle_FOV_Z - el_data.position[2], distance) * 180 / 3.1415);
+		else
+			continue;
 
-		float instance_2d, instance_3d = -1;
-		instance_2d = sqrt(pow(diff_x, 2) + pow(diff_y, 2));
-		instance_3d = sqrt(pow(diff_x, 2) + pow(diff_y, 2) + pow(diff_z, 2));
+		diff_face_x = CursorAngle_X - target_face_x;
+		if (diff_face_x <= -180)//跨0轴的两种情况
+			diff_face_x += 360;
+		if (diff_face_x >= 180)
+			diff_face_x -= 360;
 
-		diff_mouse = CursorAngle_X - angle_x;
-		if (angle_x- CursorAngle_X > 180)
-			diff_mouse = 360 - angle_x + CursorAngle_X;
-		else if (CursorAngle_X - angle_x>180) 
-			diff_mouse = (360 - CursorAngle_X + angle_x)*-1;
+		diff_face_y = target_face_y - CursorAngle_Y;
 
-		// TODO 
- 		float size_x = 1024;
-		float size_y = 768;
 
-		float fov = 90;
-		float tmp,tmp2,screen_x,screen_y,w,h;
-		float compare = 1000 / instance_3d;
-		tmp = tan(diff_mouse*PI/180);
-		screen_x = size_x / 2 + (tmp)*size_x / 2 - 8 * compare * 90 / fov;
-		// AngleMouse 鼠标角度加个负号，要取相反值
-		// 不加负号会造成方框向抬起的角度上移
-		tmp2 = tan(-CursorAngle_Y * PI / 180) * instance_2d + diff_z;
-		screen_y = size_y / 2 + tmp2 / instance_2d * 512 * 90 / fov - 5;
+		FLOAT cal_fov_y = (FLOAT)((double)atan2(768, 1024) * 180 / 3.1415);
+		if (fabs(diff_face_x) > 45 || fabs(diff_face_y) > cal_fov_y)
+			continue;// 不在屏幕范围内
 
-		w = 16.666666 * compare * 90 / fov;
-		h = 33.666666 * compare * 90 / fov;
-		//OUTPUT_DEBUG(L"screen (%f,%f,%f,%f) , instance_3d {%f}", screen_x, screen_y,w,h, instance_3d);
-		//DrawBox(screen_x, screen_y, w, h, ImColor(color_pick));
+		float screen_x, screen_y;
+		int diff_x = (int)(tan(diff_face_x * 3.1416 / 180) * ((1024) / 2));
+		screen_x = (float)(1024 / 2 + diff_x);
+
+		int diff_y = (int)(tan(diff_face_y * 3.1416 / 180) * ((1024) / 2));
+		screen_y = (float)(768 / 2 + diff_y);
+
+
+		float fov = 90; // TODO
+		float offset = 1000 / distance;
+		float w = 16.666666 * offset * 90 / fov;
+		float h = 33.666666 * offset * 90 / fov;
+		screen_x = screen_x - 10;
+		screen_y = screen_y - 10;
 		DrawEspBox(box_type, screen_x, screen_y, w, h, 255, 255, 255, 255);
-
-
-
 	}
 	
 }
