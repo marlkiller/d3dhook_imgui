@@ -5,8 +5,12 @@
 - OpenGL SDK
 - c++/VSStudio 
 - ImGui
+### Preview
 
-![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/eg.gif)
+> DirectX11
+![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/dx11_1.jpg)
+![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/dx11_2.jpg)
+> OpenGL
 ![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/open_gl.jpg)
 
 ### TODO
