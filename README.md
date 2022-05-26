@@ -1,12 +1,13 @@
-## d3dhook_kiero:
-d3dhook direct kiero minhook. 
+## DirectX/OpenGL  detours hook. 
 
 ### Build Environment
 - DirectX SDK https://www.microsoft.com/en-us/download/details.aspx?id=6812
+- OpenGL SDK
 - c++/VSStudio 
 - ImGui
 
 ![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/eg.gif)
+![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/open_gl.jpg)
 
 ### TODO
 
