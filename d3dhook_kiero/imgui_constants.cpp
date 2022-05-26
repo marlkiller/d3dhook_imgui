@@ -16,7 +16,7 @@ ImColor color_red = ImColor(255, 0, 0, 255);
 ImColor color_green = ImColor(0, 255, 0, 255);
 ImColor color_blue = ImColor(0, 0, 255, 255);
 ImColor color_black = ImColor(255, 255, 255, 255);
-ImVec4 color_pick = ImVec4(0.23f, 1.0f, 1.0f, 1.0f);
+ImVec4 color_pick = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 
 int p_open = 0;
 bool greetings = true;
@@ -114,7 +114,7 @@ void DrawMainWin()
         //ImGui::ColorPicker4("##picker", (float*)&color_pick , ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_AlphaPreview);
         if (draw_demo)
         {
-            ImGui::ColorEdit4("HSV RGB ColorPick", (float*)&color_pick, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_Float| ImGuiColorEditFlags_AlphaBar);
+            ImGui::ColorEdit4("HSV RGB ColorPick", (float*)&color_pick, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Float| ImGuiColorEditFlags_AlphaBar);
             ImGui::SliderFloat("BGAlpha", &bg_alpha, 0.0f, 1.0f, "bg_alpha:%.1f");
             ImGui::SliderFloat("Rounding", &rounding, 0.0f, 12.0f, "rounding:%.1f");
             ImGui::SliderInt("Segments", &segments, 0, 512, "segments:%d");

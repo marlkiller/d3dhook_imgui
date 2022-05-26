@@ -9,7 +9,7 @@ enum
     FL_CENTER_Y = 1 << 4
 };
 
-
+void DrawTextVal(int x, int y, const ImColor& color, const char* val);
 void AddImage(const ImVec2& position, const ImVec2& size, const ImTextureID pTexture, const ImColor& color);
 void AddCircleFilled(const ImVec2& position, float radius, const ImColor& color, int segments = 100);
 void AddCircle(const ImVec2& position, float radius, const ImColor& color, int segments = 100);

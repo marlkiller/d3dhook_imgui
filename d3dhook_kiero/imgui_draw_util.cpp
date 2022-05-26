@@ -3,6 +3,10 @@
 #include "imgui/imgui_internal.h"
 #include "imgui_draw_util.h"
 
+
+void DrawTextVal(int x,int y, const ImColor& color, const char* val) {
+    ImGui::GetBackgroundDrawList()->AddText(ImVec2(x, y), color, val);
+}
 void AddImage(const ImVec2& position, const ImVec2& size, const ImTextureID pTexture, const ImColor& color)
 {
     ImRect bb(position, ImVec2(position.x + size.x, position.y + size.y));

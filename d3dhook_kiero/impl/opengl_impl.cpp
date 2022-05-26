@@ -32,6 +32,7 @@ glBegin_t oGLBegin;
 glClear_t oGLClear;
 glColor4f_t oGLColor4f;
 GLuint texture_id[1024];
+bool is_matrix = true;
 
 
 
@@ -108,8 +109,6 @@ typedef struct PlayerData
 	float hp;
 }PlayerData;
 
-RECT  g_winRect = { 0 };
-
 bool WorldToScreen(float position[3], float screen[2], float matrix[16], int windowWidth, int windowHeight)
 {
     //Matrix-vector Product, multiplying world(eye) coordinates by projection matrix = clipCoords
@@ -130,6 +129,9 @@ bool WorldToScreen(float position[3], float screen[2], float matrix[16], int win
 
 	screen[0] = (windowWidth / 2 * NDC[0]) + (NDC[0] + windowWidth / 2);
 	screen[1] = -(windowHeight / 2 * NDC[1]) + (NDC[1] + windowHeight / 2);
+
+	OUTPUT_DEBUG(L"screen %f,%f", screen[0], screen[1]);
+
     return true;
 }
 void LoadGameInfo() {
@@ -158,6 +160,7 @@ void DrawOpenGLDIY() {
 	{
 		ImGui::Begin("OpenGLDraw");
 		ImGui::Checkbox("DrawESP", &enable_draw_esp);
+		ImGui::Checkbox("UseMatrix", &is_matrix);
 		ImGui::End();
 	}
 
@@ -180,73 +183,90 @@ void DrawOpenGLDIY() {
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Y), &CursorAngle_FOV_Y, sizeof(CursorAngle_FOV_Y), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Z), &CursorAngle_FOV_Z, sizeof(CursorAngle_FOV_Z), 0);
 
-	//OUTPUT_DEBUG(L"my_data > %f,%f,%f,%f,%f,%f", my_data.hp, CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z);
+	float matrix[16];
+	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x1820100), &matrix, sizeof(matrix), 0);
+	//OUTPUT_DEBUG(L"matrix > %f,%f,%f,%f,%f,%f", matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
 
-	// TODO support Matrix
 	for (int i = 1; i <= numb; i++)
 	{
  		PlayerData el_data = { 0 };
 		ReadDataList(i, &el_data);
-		float target_face_x, target_face_y, diff_face_x, diff_face_y;
+		float w, h, distance;
+		float screen[2];
+		const char* txt_val= "";
+		distance = sqrt((el_data.position[0] - CursorAngle_FOV_X) * (el_data.position[0] - CursorAngle_FOV_X) + (CursorAngle_FOV_Y - el_data.position[1]) * (CursorAngle_FOV_Y - el_data.position[1]));
+		if (!is_matrix)
+		{
+			txt_val = "draw_by_fov";
+			float target_face_x, target_face_y, diff_face_x, diff_face_y;
 
-		if (el_data.position[0] > CursorAngle_FOV_X && el_data.position[1] >= CursorAngle_FOV_Y)//第一象限
-			target_face_x = (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
-		else if (el_data.position[0] <= CursorAngle_FOV_X && el_data.position[1] > CursorAngle_FOV_Y)//第二象限
-			target_face_x = 180 - (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
-		else if (el_data.position[0] < CursorAngle_FOV_X && el_data.position[1] <= CursorAngle_FOV_Y)//第三象限
-			target_face_x = 180 + (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
-		else if (el_data.position[0] >= CursorAngle_FOV_X && el_data.position[1] < CursorAngle_FOV_Y)//第四象限
-			target_face_x = 360 - (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
-		else 
-			continue;
-		float distance = sqrt((el_data.position[0] - CursorAngle_FOV_X) * (el_data.position[0] - CursorAngle_FOV_X) + (CursorAngle_FOV_Y - el_data.position[1]) * (CursorAngle_FOV_Y - el_data.position[1]));
-		float distance_3d = sqrt(pow(my_data.position[0] - el_data.position[0], 2) + pow(my_data.position[1] - el_data.position[1], 2) + pow(my_data.position[2] - el_data.position[2], 2));
-		if (el_data.position[2] > CursorAngle_FOV_Z)//上方
-			target_face_y = (FLOAT)(-(double)atan2(el_data.position[2] - CursorAngle_FOV_Z, distance) * 180 / PI);
-		else if (el_data.position[2] < CursorAngle_FOV_Z)//下方
-			target_face_y = (FLOAT)((double)atan2(CursorAngle_FOV_Z - el_data.position[2], distance) * 180 / PI);
-		else
-			continue;
+			if (el_data.position[0] > CursorAngle_FOV_X && el_data.position[1] >= CursorAngle_FOV_Y)//第一象限
+				target_face_x = (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
+			else if (el_data.position[0] <= CursorAngle_FOV_X && el_data.position[1] > CursorAngle_FOV_Y)//第二象限
+				target_face_x = 180 - (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
+			else if (el_data.position[0] < CursorAngle_FOV_X && el_data.position[1] <= CursorAngle_FOV_Y)//第三象限
+				target_face_x = 180 + (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
+			else if (el_data.position[0] >= CursorAngle_FOV_X && el_data.position[1] < CursorAngle_FOV_Y)//第四象限
+				target_face_x = 360 - (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
+			else
+				continue;
+			float distance_3d = sqrt(pow(my_data.position[0] - el_data.position[0], 2) + pow(my_data.position[1] - el_data.position[1], 2) + pow(my_data.position[2] - el_data.position[2], 2));
+			if (el_data.position[2] > CursorAngle_FOV_Z)//上方
+				target_face_y = (FLOAT)(-(double)atan2(el_data.position[2] - CursorAngle_FOV_Z, distance) * 180 / PI);
+			else if (el_data.position[2] < CursorAngle_FOV_Z)//下方
+				target_face_y = (FLOAT)((double)atan2(CursorAngle_FOV_Z - el_data.position[2], distance) * 180 / PI);
+			else
+				continue;
 
-		diff_face_x = CursorAngle_X - target_face_x;
-		if (diff_face_x <= -180)//跨0轴的两种情况
-			diff_face_x += 360;
-		if (diff_face_x >= 180)
-			diff_face_x -= 360;
+			diff_face_x = CursorAngle_X - target_face_x;
+			if (diff_face_x <= -180)//跨0轴的两种情况
+				diff_face_x += 360;
+			if (diff_face_x >= 180)
+				diff_face_x -= 360;
 
-		diff_face_y = target_face_y - CursorAngle_Y;
-
-
-		FLOAT cal_fov_y = (FLOAT)((double)atan2(HWND_SCREEN_Y, HWND_SCREEN_X) * 180 / PI);
-		if (fabs(diff_face_x) > 45 || fabs(diff_face_y) > cal_fov_y)
-			continue;// 不在屏幕范围内
+			diff_face_y = target_face_y - CursorAngle_Y;
 
 
-		// FIXME FOV
+			FLOAT cal_fov_y = (FLOAT)((double)atan2(HWND_SCREEN_Y, HWND_SCREEN_X) * 180 / PI);
+			if (fabs(diff_face_x) > 45 || fabs(diff_face_y) > cal_fov_y)
+				continue;// 不在屏幕范围内
+
+
+			// FIXME FOV
+ 			int diff_x = (int)(tan(diff_face_x * PI / 180) * ((HWND_SCREEN_X) / 2));
+			screen[0] = (float)(HWND_SCREEN_X / 2 + diff_x);
+			int diff_y = (int)(tan(diff_face_y * PI / 180) * ((HWND_SCREEN_X) / 2));
+			screen[1] = (float)(HWND_SCREEN_Y / 2 + diff_y);
+			//screen[0] = screen[0] - 8;
+			screen[1] = screen[1] + 10;
+
+			// STARTED METHOD2
+			//float diff_x = my_data.position[0] - el_data.position[0];
+			//float diff_y = my_data.position[1] - el_data.position[1];
+			//float diff_z = my_data.position[2] - el_data.position[2];
+			//float distance_2d = sqrt(pow(diff_x, 2) + pow(diff_y, 2));
+			//float instance_3d = sqrt(pow(diff_x, 2) + pow(diff_y, 2) + pow(diff_z, 2));
+
+			//float offset = 1000 / distance_3d;
+			//float tmp = tan(diff_face_x * PI / 180);
+			//float screen_x = HWND_SCREEN_X / 2 + (tmp)*HWND_SCREEN_X / 2 - 8 * offset * 90 / FOV;
+			//float tmp2 = tan(-CursorAngle_Y * PI / 180) * distance_2d + diff_z; // AngleMouse 鼠标角度加个负号，要取相反值,不加负号会造成方框向抬起的角度上移
+			//float screen_y = HWND_SCREEN_Y / 2 + tmp2 / distance_2d * 512 * 90 / FOV - 10;
+			// END
+
+		}
+		else {
+			txt_val = "draw_by_matrix";
+			WorldToScreen(el_data.position, screen, matrix, HWND_SCREEN_X, HWND_SCREEN_Y); //model center position, plz add offset
+		}
 		float offset = 1000 / distance;
-		float screen_x, screen_y;
-		int diff_x = (int)(tan(diff_face_x * PI / 180) * ((HWND_SCREEN_X) / 2));
-		screen_x = (float)(HWND_SCREEN_X / 2 + diff_x);
-		int diff_y = (int)(tan(diff_face_y * PI / 180) * ((HWND_SCREEN_X) / 2));
-		screen_y = (float)(HWND_SCREEN_Y / 2 + diff_y);
-		screen_x = screen_x - 8;
-		screen_y = screen_y - 7; 
+		w = 16.666666 * offset * 90 / FOV;
+		h = 33.666666 * offset * 90 / FOV;
+		DrawTextVal(screen[0], screen[1], ImColor(color_pick), txt_val);
+		DrawEspBox(box_type, screen[0] - w/2, screen[1]- h/2, w, h, color_pick.x, color_pick.y, color_pick.z, color_pick.w);
 
-		//float diff_x = my_data.position[0] - el_data.position[0];
-		//float diff_y = my_data.position[1] - el_data.position[1];
-		//float diff_z = my_data.position[2] - el_data.position[2];
-		//float distance_2d = sqrt(pow(diff_x, 2) + pow(diff_y, 2));
-		//float instance_3d = sqrt(pow(diff_x, 2) + pow(diff_y, 2) + pow(diff_z, 2));
+		OUTPUT_DEBUG(L" color_pick.x {%f}, color_pick.x {%f}, color_pick.x {%f}, color_pick.x {%f}", color_pick.x, color_pick.y, color_pick.z, color_pick.w);
 
-		//float offset = 1000 / distance_3d;
-		//float tmp = tan(diff_face_x * PI / 180);
-		//float screen_x = HWND_SCREEN_X / 2 + (tmp)*HWND_SCREEN_X / 2 - 8 * offset * 90 / FOV;
-		//float tmp2 = tan(-CursorAngle_Y * PI / 180) * distance_2d + diff_z; // AngleMouse 鼠标角度加个负号，要取相反值,不加负号会造成方框向抬起的角度上移
-		//float screen_y = HWND_SCREEN_Y / 2 + tmp2 / distance_2d * 512 * 90 / FOV - 5;
-
-		float w = 16.666666 * offset * 90 / FOV;
-		float h = 33.666666 * offset * 90 / FOV;
-		DrawEspBox(box_type, screen_x, screen_y, w, h, 255, 255, 255, 255);
 	}
 	
 }
