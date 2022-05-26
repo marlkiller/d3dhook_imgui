@@ -15,13 +15,13 @@
 #include "../imgui/glcorearb.h"
 #include "../common_utils.h"
 #include "../imgui_draw_util.h"
+#define PI 3.1415926
 
 
 
 typedef BOOL(APIENTRY* wglSwapBuffers)(HDC  hdc);
 typedef void (APIENTRY* glBegin_t)(GLenum mode);
 typedef void (APIENTRY* glClear_t)(GLbitfield mask);
-
 typedef void (APIENTRY* glColor4f_t)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 //typedef void (APIENTRY* glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 //typedef void (APIENTRY* glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
@@ -31,9 +31,6 @@ wglSwapBuffers oWGLSwapBuffers;
 glBegin_t oGLBegin;
 glClear_t oGLClear;
 glColor4f_t oGLColor4f;
-
-static bool coloring = false;
-
 GLuint texture_id[1024];
 
 
@@ -57,7 +54,6 @@ void LoadTextureFile(int index, const char* image)
 	SOIL_free_image_data(soilimage);
 	glBindTexture(GL_TEXTURE_2D, last_texture);
 }
-
 void LoadTextureMemary(int index, int resource_id, char* resource_type)
 {
 	int width, height;
@@ -83,17 +79,10 @@ void LoadTextureMemary(int index, int resource_id, char* resource_type)
 	SOIL_free_image_data(soilimage);
 	glBindTexture(GL_TEXTURE_2D, last_texture);
 }
-
-void generate_texture(int index,int width, int height) {
-
-	
-}
 	
 
 void APIENTRY hkGLColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-
-	red = 1 * red, green = 1 * green, blue = 1 * blue;
 	(*oGLColor4f)(red, green, blue, alpha);
 }
 
@@ -153,7 +142,6 @@ void LoadGameInfo() {
 void ReadDataList(int index, PlayerData* data)
 {
 	//[[[cstrike.exe + 11069BC]+ 7C + (i*324)] + 4] + 8
-	float dev = 0;
 	DWORD addr;
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x11069BC), &addr, sizeof(DWORD), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD), 0);//其他人的基址
@@ -161,23 +149,7 @@ void ReadDataList(int index, PlayerData* data)
 	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x8), &data->position, sizeof(float[3]), 0);//其他人位置
 	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x160), &data->hp, sizeof(float), 0);//其他人血量
 
-
-
 }
-#define PI 3.1415926
-
-
-
-float GetDistance3D(float MyPos[3], float ObjPos[3])
-{
-	return sqrt
-	(
-		pow((double)(ObjPos[0] - MyPos[0]), 2.0) +
-		pow((double)(ObjPos[1] - MyPos[1]), 2.0) +
-		pow((double)(ObjPos[2] - MyPos[2]), 2.0)
-	);
-}
-
 
 void DrawOpenGLDIY() {
 
@@ -198,42 +170,41 @@ void DrawOpenGLDIY() {
 		return;
 
 	int numb = 0;
+	int FOV;
 	memcpy(&numb, (PBYTE*)(cstrike_base + el_num_base), sizeof(numb));
-
 	float CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z;
-
+	memcpy(&FOV, (PBYTE*)(cstrike_base + 0x617AC8), 4);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_X_offset), &CursorAngle_X, sizeof(CursorAngle_X), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_Y_offset), &CursorAngle_Y, sizeof(CursorAngle_Y), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_X), &CursorAngle_FOV_X, sizeof(CursorAngle_FOV_X), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Y), &CursorAngle_FOV_Y, sizeof(CursorAngle_FOV_Y), 0);
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_Z), &CursorAngle_FOV_Z, sizeof(CursorAngle_FOV_Z), 0);
 
-	OUTPUT_DEBUG(L"my_data > %f,%f,%f,%f,%f,%f", my_data.hp, CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z);
+	//OUTPUT_DEBUG(L"my_data > %f,%f,%f,%f,%f,%f", my_data.hp, CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z);
 
+	// TODO support Matrix
 	for (int i = 1; i <= numb; i++)
 	{
-		float size_x = 1024; // TODO
-		float size_y = 768;
-		PlayerData el_data = { 0 };
+ 		PlayerData el_data = { 0 };
 		ReadDataList(i, &el_data);
 		float target_face_x, target_face_y, diff_face_x, diff_face_y;
 
 		if (el_data.position[0] > CursorAngle_FOV_X && el_data.position[1] >= CursorAngle_FOV_Y)//第一象限
-			target_face_x = (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, el_data.position[0] - CursorAngle_FOV_X) * 180 / 3.1415);
+			target_face_x = (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
 		else if (el_data.position[0] <= CursorAngle_FOV_X && el_data.position[1] > CursorAngle_FOV_Y)//第二象限
-			target_face_x = 180 - (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, CursorAngle_FOV_X - el_data.position[0]) * 180 / 3.1415);
+			target_face_x = 180 - (FLOAT)((double)atan2(el_data.position[1] - CursorAngle_FOV_Y, CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
 		else if (el_data.position[0] < CursorAngle_FOV_X && el_data.position[1] <= CursorAngle_FOV_Y)//第三象限
-			target_face_x = 180 + (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], CursorAngle_FOV_X - el_data.position[0]) * 180 / 3.1415);
+			target_face_x = 180 + (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], CursorAngle_FOV_X - el_data.position[0]) * 180 / PI);
 		else if (el_data.position[0] >= CursorAngle_FOV_X && el_data.position[1] < CursorAngle_FOV_Y)//第四象限
-			target_face_x = 360 - (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], el_data.position[0] - CursorAngle_FOV_X) * 180 / 3.1415);
+			target_face_x = 360 - (FLOAT)((double)atan2(CursorAngle_FOV_Y - el_data.position[1], el_data.position[0] - CursorAngle_FOV_X) * 180 / PI);
 		else 
 			continue;
 		float distance = sqrt((el_data.position[0] - CursorAngle_FOV_X) * (el_data.position[0] - CursorAngle_FOV_X) + (CursorAngle_FOV_Y - el_data.position[1]) * (CursorAngle_FOV_Y - el_data.position[1]));
 		float distance_3d = sqrt(pow(my_data.position[0] - el_data.position[0], 2) + pow(my_data.position[1] - el_data.position[1], 2) + pow(my_data.position[2] - el_data.position[2], 2));
 		if (el_data.position[2] > CursorAngle_FOV_Z)//上方
-			target_face_y = (FLOAT)(-(double)atan2(el_data.position[2] - CursorAngle_FOV_Z, distance) * 180 / 3.1415);
+			target_face_y = (FLOAT)(-(double)atan2(el_data.position[2] - CursorAngle_FOV_Z, distance) * 180 / PI);
 		else if (el_data.position[2] < CursorAngle_FOV_Z)//下方
-			target_face_y = (FLOAT)((double)atan2(CursorAngle_FOV_Z - el_data.position[2], distance) * 180 / 3.1415);
+			target_face_y = (FLOAT)((double)atan2(CursorAngle_FOV_Z - el_data.position[2], distance) * 180 / PI);
 		else
 			continue;
 
@@ -246,24 +217,35 @@ void DrawOpenGLDIY() {
 		diff_face_y = target_face_y - CursorAngle_Y;
 
 
-		FLOAT cal_fov_y = (FLOAT)((double)atan2(768, 1024) * 180 / 3.1415);
+		FLOAT cal_fov_y = (FLOAT)((double)atan2(HWND_SCREEN_Y, HWND_SCREEN_X) * 180 / PI);
 		if (fabs(diff_face_x) > 45 || fabs(diff_face_y) > cal_fov_y)
 			continue;// 不在屏幕范围内
 
-		float screen_x, screen_y;
-		int diff_x = (int)(tan(diff_face_x * 3.1416 / 180) * ((1024) / 2));
-		screen_x = (float)(1024 / 2 + diff_x);
 
-		int diff_y = (int)(tan(diff_face_y * 3.1416 / 180) * ((1024) / 2));
-		screen_y = (float)(768 / 2 + diff_y);
-
-
-		float fov = 90; // TODO
+		// FIXME FOV
 		float offset = 1000 / distance;
-		float w = 16.666666 * offset * 90 / fov;
-		float h = 33.666666 * offset * 90 / fov;
-		screen_x = screen_x - 10;
-		screen_y = screen_y - 10;
+		float screen_x, screen_y;
+		int diff_x = (int)(tan(diff_face_x * PI / 180) * ((HWND_SCREEN_X) / 2));
+		screen_x = (float)(HWND_SCREEN_X / 2 + diff_x);
+		int diff_y = (int)(tan(diff_face_y * PI / 180) * ((HWND_SCREEN_X) / 2));
+		screen_y = (float)(HWND_SCREEN_Y / 2 + diff_y);
+		screen_x = screen_x - 8;
+		screen_y = screen_y - 7; 
+
+		//float diff_x = my_data.position[0] - el_data.position[0];
+		//float diff_y = my_data.position[1] - el_data.position[1];
+		//float diff_z = my_data.position[2] - el_data.position[2];
+		//float distance_2d = sqrt(pow(diff_x, 2) + pow(diff_y, 2));
+		//float instance_3d = sqrt(pow(diff_x, 2) + pow(diff_y, 2) + pow(diff_z, 2));
+
+		//float offset = 1000 / distance_3d;
+		//float tmp = tan(diff_face_x * PI / 180);
+		//float screen_x = HWND_SCREEN_X / 2 + (tmp)*HWND_SCREEN_X / 2 - 8 * offset * 90 / FOV;
+		//float tmp2 = tan(-CursorAngle_Y * PI / 180) * distance_2d + diff_z; // AngleMouse 鼠标角度加个负号，要取相反值,不加负号会造成方框向抬起的角度上移
+		//float screen_y = HWND_SCREEN_Y / 2 + tmp2 / distance_2d * 512 * 90 / FOV - 5;
+
+		float w = 16.666666 * offset * 90 / FOV;
+		float h = 33.666666 * offset * 90 / FOV;
 		DrawEspBox(box_type, screen_x, screen_y, w, h, 255, 255, 255, 255);
 	}
 	
@@ -296,10 +278,10 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
 		  
 
 			ImGui_ImplOpenGL2_Init();
-			//LoadTextureFile(1,"C:\\Users\\voidm\\Desktop\\111.jpg"); // TODO move to resource
+			//LoadTextureFile(1,"C:\\Users\\voidm\\Desktop\\111.jpg"); 
 			LoadTextureMemary(1,IDB_PNG1,"PNG"); // RED
 			LoadTextureMemary(2,IDB_PNG2,"PNG"); // GREEN
-			LoadTextureMemary(3, IDB_BITMAP1,"Bitmap"); // DIY
+			LoadTextureMemary(3, IDB_BITMAP1,"JPG"); // DIY
 
 			LoadGameInfo();
  			init = true;
@@ -434,7 +416,7 @@ void APIENTRY hkGLBegin(GLenum mode)
 		}else if (draw_cclor_type ==2)
 		{
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-			glBindTexture(GL_TEXTURE_2D, texture_id[2]);
+			glBindTexture(GL_TEXTURE_2D, texture_id[3]);
 			/*glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 			glBindTexture(GL_TEXTURE_2D, texture_id[2]);*/
 

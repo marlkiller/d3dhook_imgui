@@ -254,13 +254,19 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Pictures\DIY.jpg">
-      <Filter>资源文件</Filter>
-    </Image>
     <Image Include="..\..\..\..\..\Pictures\green_buffer.png">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="..\..\..\..\..\Pictures\red_buffer.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="resource\IMG\DIY.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="resource\IMG\green_buffer.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="resource\IMG\red_buffer.png">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

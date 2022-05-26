@@ -240,9 +240,11 @@
     <ResourceCompile Include="d3dhook_kiero.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Pictures\DIY.jpg" />
     <Image Include="..\..\..\..\..\Pictures\green_buffer.png" />
     <Image Include="..\..\..\..\..\Pictures\red_buffer.png" />
+    <Image Include="resource\IMG\DIY.jpg" />
+    <Image Include="resource\IMG\green_buffer.png" />
+    <Image Include="resource\IMG\red_buffer.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

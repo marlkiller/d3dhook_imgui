@@ -42,6 +42,8 @@ struct DrawItem
 
 extern HMODULE Dll_HWND;
 extern HWND GAME_HWND;
+extern float HWND_SCREEN_X;
+extern float HWND_SCREEN_Y;
 
 extern struct ImColor color_red;
 extern struct ImColor color_green;

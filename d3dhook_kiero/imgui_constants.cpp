@@ -4,10 +4,13 @@
 #include <string>
 #include "imgui_draw_util.h"
 #include "common_utils.h"
+#include "imgui/imgui_internal.h"
 
 
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
+float HWND_SCREEN_X;
+float HWND_SCREEN_Y;
 
 ImColor color_red = ImColor(255, 0, 0, 255);
 ImColor color_green = ImColor(0, 255, 0, 255);
@@ -92,17 +95,19 @@ void HelpMarker(const char* desc)
 
 void DrawMainWin()
 {
-
+    
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
     io.MouseDrawCursor = p_open;
 
     if (p_open)
     {
-
+        ImGuiContext& g = *GImGui;
         ImGui::SetNextWindowBgAlpha(bg_alpha);
         ImGui::Begin("My Windows ");
-        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y);
+        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g), Wnd :(%f,%f)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y, g.Viewports[0]->Size.x, g.Viewports[0]->Size.y);
+        HWND_SCREEN_X = g.Viewports[0]->Size.x;
+        HWND_SCREEN_Y = g.Viewports[0]->Size.y;
         ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
         
         ImGui::Checkbox("DrawDemo", &draw_demo);
