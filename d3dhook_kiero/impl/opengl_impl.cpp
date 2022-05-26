@@ -107,6 +107,7 @@ typedef struct PlayerData
 {
 	float position[3];
 	float hp;
+	bool is_death;
 }PlayerData;
 
 bool WorldToScreen(float position[3], float screen[2], float matrix[16], int windowWidth, int windowHeight)
@@ -146,10 +147,12 @@ void ReadDataList(int index, PlayerData* data)
 	//[[[cstrike.exe + 11069BC]+ 7C + (i*324)] + 4] + 8
 	DWORD addr;
 	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x11069BC), &addr, sizeof(DWORD), 0);
-	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD), 0);//其他人的基址
-	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x4), &addr, sizeof(DWORD), 0);//其他人2级基址
-	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x8), &data->position, sizeof(float[3]), 0);//其他人位置
-	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x160), &data->hp, sizeof(float), 0);//其他人血量
+	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD), 0);//基址
+	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x4), &addr, sizeof(DWORD), 0);//2级基址
+	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x8), &data->position, sizeof(float[3]), 0);//位置 x,y,z
+	ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x160), &data->hp, sizeof(float), 0);//血量
+	ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x62565C + (index * 0x68) + 0x60), &data->is_death, sizeof(bool), 0);
+
 
 }
 
@@ -169,7 +172,7 @@ void DrawOpenGLDIY() {
 	PlayerData my_data = { 0 };
 	ReadDataList(0, &my_data);
 	
-	if (my_data.hp <= 1 || my_data.hp > 100) // FIXME Alive
+	if (my_data.is_death)
 		return;
 
 	int numb = 0;
@@ -191,6 +194,8 @@ void DrawOpenGLDIY() {
 	{
  		PlayerData el_data = { 0 };
 		ReadDataList(i, &el_data);
+		if (el_data.is_death)
+			continue;
 		float w, h, distance;
 		float screen[2];
 		const char* txt_val= "";
@@ -418,6 +423,10 @@ void APIENTRY hkGLBegin(GLenum mode)
 				glDepthRange(0, 0.5);
 			else
 				glDepthRange(0.5, 1);*/
+		}
+		else if (wall_hack_type ==3)
+		{
+			return;
 		}
 		
 		if (draw_cclor_type != 2)

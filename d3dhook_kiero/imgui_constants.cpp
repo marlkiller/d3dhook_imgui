@@ -33,7 +33,7 @@ int fov_size = 100;
 float bg_alpha = 0.5;
 float rounding = 6;
 int segments = 100;
-int box_type = 1;
+int box_type = 3;
 
 bool draw_double_color = false;
 
