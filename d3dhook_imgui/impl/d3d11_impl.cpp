@@ -808,37 +808,12 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ImGui::NewFrame();
 
 
-        
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
-        // greetings TODO
-        if (greetings)
-        {
-            float sub_win_width = 300;
-            float sub_win_height = 40;
-            ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
-            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2)));
-
-            ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
-            ImGui::Text("Plugin loaded, press INSERT for menu");
-            ImGui::End();
-
-            static DWORD lastTime = timeGetTime();
-            DWORD timePassed = timeGetTime() - lastTime;
-            if (timePassed > 6000)
-            {
-                LOG_INFO("greetings init timePassed {%d}", timePassed);
-                greetings = false;
-                lastTime = timeGetTime();
-            }
-        }
-
-
         /*POINT mPos;
         GetCursorPos(&mPos);
         ScreenToClient(GAME_HWND, &mPos);
         ImGui::GetIO().MousePos.x = mPos.x;
         ImGui::GetIO().MousePos.y = mPos.y*/;
-
+        DrawGreetWin();
         DrawMainWin();
 
         ImGui::EndFrame();
@@ -933,7 +908,7 @@ void impl::d3d11::init()
     oDrawIndexed = (D3D11DrawIndexedHook)(DWORD_PTR*)pContextVTable[12];
     oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
 
-    LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%d}, oDrawIndexed{%d}",oPresent,oDrawIndexed);
+    LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%x}, oDrawIndexed{%x}",oPresent,oDrawIndexed);
 
     //kiero::bind(8, (void**)&oPresent, hkPresent11);
 
@@ -942,12 +917,12 @@ void impl::d3d11::init()
     DetourAttach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
     DetourAttach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
     DetourTransactionCommit();
-    LOG_INFO("DetourTransactionBegin hook complete >> hkPresent11 {%d}, hkDrawIndexed11{%d}",hkPresent11,hkDrawIndexed11);
+    LOG_INFO("DetourTransactionBegin hook complete >> hkPresent11 {%x}, hkDrawIndexed11{%x}",hkPresent11,hkDrawIndexed11);
 
     DWORD dwOld;
     VirtualProtect(oPresent, 2, PAGE_EXECUTE_READWRITE, &dwOld);
     
-    LOG_INFO("VirtualProtect >> oPresent {%d}, dwOld{ %d}",oPresent,dwOld);
+    LOG_INFO("VirtualProtect >> oPresent {%x}, dwOld{ %x}",oPresent,dwOld);
 
     /*while (true) {
         Sleep(10);

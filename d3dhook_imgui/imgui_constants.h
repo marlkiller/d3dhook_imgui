@@ -95,6 +95,8 @@ extern int find_modul_items_len;
 
 extern const char* has_focus_items[];
 
+
+extern void DrawGreetWin();
 extern void DrawMainWin();
 
 extern void doGl3wInit();
@@ -106,3 +108,11 @@ extern WNDPROC oWndProcHandler;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 extern LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+struct EPINFO
+{
+    DWORD pid;
+    HWND hwnd;
+};
+
+extern HWND GetMainHWnd(DWORD pid);
