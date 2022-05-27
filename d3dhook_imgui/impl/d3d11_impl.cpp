@@ -18,12 +18,8 @@
 #pragma comment(lib, "winmm.lib ")
 
 
-typedef HRESULT(__stdcall* D3D11PresentHook) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
-typedef void(__stdcall* D3D11DrawIndexedHook) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
-
-typedef void(__stdcall* DrawIndexed) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
 typedef HRESULT(__stdcall* Present) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
-
+typedef void(__stdcall* DrawIndexed) (ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
 
 
 static DWORD_PTR* pSwapChainVtable = NULL;
@@ -31,7 +27,7 @@ static DWORD_PTR* pContextVTable = NULL;
 static DWORD_PTR* pDeviceVTable = NULL;
 
 
-static D3D11PresentHook oPresent = NULL;
+static Present oPresent = NULL;
 static DrawIndexed oDrawIndexed = NULL;
 
 static ID3D11Device* pDevice = NULL;
@@ -905,8 +901,8 @@ void impl::d3d11::init()
     pDeviceVTable = (DWORD_PTR*)pDevice;
     pDeviceVTable = (DWORD_PTR*)pDeviceVTable[0];
 
-    oDrawIndexed = (D3D11DrawIndexedHook)(DWORD_PTR*)pContextVTable[12];
-    oPresent = (D3D11PresentHook)(DWORD_PTR*)pSwapChainVtable[8];
+    oDrawIndexed = (DrawIndexed)(DWORD_PTR*)pContextVTable[12];
+    oPresent = (Present)(DWORD_PTR*)pSwapChainVtable[8];
 
     LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%x}, oDrawIndexed{%x}",oPresent,oDrawIndexed);
 

@@ -3,8 +3,9 @@
 ### Build Environment
 - DirectX SDK https://www.microsoft.com/en-us/download/details.aspx?id=6812
 - OpenGL SDK
-- c++/VSStudio 
-- ImGui
+- c++/VisualStudio 
+- ImGui/stb_image/detours
+
 ### Preview
 
 > DirectX11
@@ -22,8 +23,9 @@
 | DirectX                             | x86 | x64 |
 | :---------------------------------- | :------: | :----: | 
 | 9   |    ✅    |   ✅   | 
-| 10  |    ❌    |   ❌   |
+| 10  |    ✅    |   ✅   |
 | 11  |    ✅    |   ✅   |  
+| 12  |    ❌    |   ❌   |  
 
 | OpenGL                             | x86 | x64 |
 | :---------------------------------- | :------: | :----: | 
