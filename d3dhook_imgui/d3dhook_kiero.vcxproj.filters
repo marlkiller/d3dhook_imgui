@@ -34,6 +34,15 @@
     <Filter Include="imgui\GL\GLX86">
       <UniqueIdentifier>{ed4e2e96-fc14-4e01-b784-7416537049e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui\free_image">
+      <UniqueIdentifier>{707cbbc7-11d6-44b3-82a0-babceceb96a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\free_image\x32">
+      <UniqueIdentifier>{7b90d004-3e33-4cf3-9240-2fb972272d63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\free_image\x64">
+      <UniqueIdentifier>{addf3dc9-fe22-414e-bdcf-7a2071effa90}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -153,6 +162,24 @@
     <ClInclude Include="imgui\imgui_impl_opengl3.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="imgui\free_image\x64\FreeImage.h">
+      <Filter>imgui\free_image\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\free_image\x32\FreeImage.h">
+      <Filter>imgui\free_image\x32</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\GL\GLx64\glew.h">
+      <Filter>imgui\GL\GLX64</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\GL\GLx64\glxew.h">
+      <Filter>imgui\GL\GLX64</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\GL\GLx64\wglew.h">
+      <Filter>imgui\GL\GLX64</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -221,18 +248,6 @@
     <ClCompile Include="impl\opengl_impl.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="imgui\SOIL\image_DXT.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\SOIL\image_helper.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\SOIL\SOIL.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\SOIL\stb_image_aug.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="imgui\gl3w.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -253,8 +268,30 @@
     <Library Include="detours.X86\syelog.lib">
       <Filter>detours.X86</Filter>
     </Library>
-    <Library Include="imgui\GL\GLx86\glew32.lib" />
-    <Library Include="imgui\GL\GLx86\glew32s.lib" />
+    <Library Include="imgui\free_image\x64\FreeImage.lib">
+      <Filter>imgui\free_image\x64</Filter>
+    </Library>
+    <Library Include="imgui\free_image\x32\FreeImage.lib">
+      <Filter>imgui\free_image\x32</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx64\glew32.lib">
+      <Filter>imgui\GL\GLX64</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx64\glew32s.lib">
+      <Filter>imgui\GL\GLX64</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx64\OpenGL32.Lib">
+      <Filter>imgui\GL\GLX64</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx86\glew32.lib">
+      <Filter>imgui\GL\GLX86</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx86\glew32s.lib">
+      <Filter>imgui\GL\GLX86</Filter>
+    </Library>
+    <Library Include="imgui\GL\GLx86\OpenGL32.Lib">
+      <Filter>imgui\GL\GLX86</Filter>
+    </Library>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="d3dhook_kiero.rc">
@@ -262,12 +299,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Pictures\green_buffer.png">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="..\..\..\..\..\Pictures\red_buffer.png">
-      <Filter>资源文件</Filter>
-    </Image>
     <Image Include="resource\IMG\DIY.jpg">
       <Filter>资源文件</Filter>
     </Image>
@@ -279,6 +310,11 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="imgui\SOIL\.DS_Store" />
+    <None Include="imgui\free_image\x64\FreeImage.dll">
+      <Filter>imgui\free_image\x64</Filter>
+    </None>
+    <None Include="imgui\free_image\x32\FreeImage.dll">
+      <Filter>imgui\free_image\x32</Filter>
+    </None>
   </ItemGroup>
 </Project>

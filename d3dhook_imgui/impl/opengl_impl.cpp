@@ -16,15 +16,10 @@
 #include "../imgui/Gl/GLx64/glew.h"
 #pragma comment(lib, "imgui/Gl/GLx64/glew32s.lib")
 #pragma comment(lib,"imgui/Gl/GLx64/OpenGL32.Lib")
-//#pragma comment(lib,"OpenGL32.Lib")
-
-
 #elif defined _M_IX86
 #include "../imgui/Gl/GLx86/glew.h"
 #pragma comment(lib, "imgui/Gl/GLx86/glew32s.lib")
 #pragma comment(lib,"imgui/Gl/GLx86/OpenGL32.Lib")
-//#pragma comment(lib,"OpenGL32.Lib")
-
 #endif
 //#include <gl/gl.h> 
 //#pragma comment(lib,"opengl32.lib")
@@ -40,9 +35,7 @@
 #include "../imgui/glcorearb.h"
 #include "../common_utils.h"
 #include "../imgui_draw_util.h"
-#include "../imgui/SOIL/SOIL.h"
-
-
+#include "../stb_image.h"
 
 #define PI 3.1415926
 
@@ -65,26 +58,26 @@ int draw_esp_flag = 2;
 
 void LoadTextureFile(int index, const char* image)
 {
-    int width, height;
-    GLint last_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGenTextures(1, &texture_id[index]);
-    glBindTexture(GL_TEXTURE_2D, texture_id[index]);
-    //unsigned char* soilimage = SOIL_load_image_from_memory(image, size, &width, &height, 0, SOIL_LOAD_RGBA);
-    unsigned char* soilimage = SOIL_load_image(image, &width, &height, 0, SOIL_LOAD_RGBA);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // GL_REPEAT：当纹理比表面小时重复使用纹理以填满每个点。GL_CLAMP：比1大的当作1，比0小的当作0。bilinear：二次插值，精度更高，但需要自己动手计算
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // GL_NEAREST：取比较接近的那个像素。GL_LINEAR：以周围四个像素的平均值做为纹理。bilinear：二次插值，精度更高，但需要自己动手计算
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, soilimage); // 使用glTexImage2D()时所采用的位图文件分辨率必须为：64×64、128×128、256×256三种格式，如果其他大小则会出现绘制不正常。
-    SOIL_free_image_data(soilimage);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
+    //int width, height;
+    //GLint last_texture;
+    //glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+    //glGenTextures(1, &texture_id[index]);
+    //glBindTexture(GL_TEXTURE_2D, texture_id[index]);
+    ////unsigned char* soilimage = SOIL_load_image_from_memory(image, size, &width, &height, 0, SOIL_LOAD_RGBA);
+    //unsigned char* soilimage = SOIL_load_image(image, &width, &height, 0, SOIL_LOAD_RGBA);
+    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // GL_REPEAT：当纹理比表面小时重复使用纹理以填满每个点。GL_CLAMP：比1大的当作1，比0小的当作0。bilinear：二次插值，精度更高，但需要自己动手计算
+    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // GL_NEAREST：取比较接近的那个像素。GL_LINEAR：以周围四个像素的平均值做为纹理。bilinear：二次插值，精度更高，但需要自己动手计算
+    //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, soilimage); // 使用glTexImage2D()时所采用的位图文件分辨率必须为：64×64、128×128、256×256三种格式，如果其他大小则会出现绘制不正常。
+    //SOIL_free_image_data(soilimage);
+    //glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 void LoadTextureMemary(int index, int resource_id, char* resource_type)
 {
-    int width, height;
+    int width, height,tmp;
     GLint last_texture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
     glGenTextures(1, &texture_id[index]);
@@ -92,19 +85,22 @@ void LoadTextureMemary(int index, int resource_id, char* resource_type)
 
 
 
-    HINSTANCE hInst = GetModuleHandle("d3dhook_kiero.dll");
-    HRSRC res = ::FindResource(hInst, MAKEINTRESOURCE(resource_id), TEXT(resource_type));
-    DWORD size = ::SizeofResource(hInst, res);
-    HGLOBAL mem = ::LoadResource(hInst, res);
+    //HINSTANCE Dll_HWND = GetModuleHandle("d3dhook_kiero.dll");
+    HRSRC res = ::FindResource(Dll_HWND, MAKEINTRESOURCE(resource_id), TEXT(resource_type));
+    DWORD size = ::SizeofResource(Dll_HWND, res);
+    HGLOBAL mem = ::LoadResource(Dll_HWND, res);
     LPVOID raw_data = ::LockResource(mem);
     OUTPUT_DEBUG(L"read_resource > res {%d}, size {%d} , mem {%d}", res, size, mem);
-    unsigned char* soilimage = SOIL_load_image_from_memory((unsigned char*)(raw_data), size, &width, &height, 0, SOIL_LOAD_RGBA);
+
+    unsigned char* soilimage = stbi_load_from_memory((unsigned char*)(raw_data), size,&width,&height,&tmp,4);
+    //unsigned char* soilimage = SOIL_load_image_from_memory((unsigned char*)(raw_data), size, &width, &height, 0, SOIL_LOAD_RGBA);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, soilimage);
-    SOIL_free_image_data(soilimage);
+    //SOIL_free_image_data(soilimage);
+    stbi_image_free(soilimage);
     glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 

@@ -24,6 +24,7 @@
     <ProjectGuid>{9e7f6a41-c35f-4e78-b19d-068771550b82}</ProjectGuid>
     <RootNamespace>d3dhookkiero</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>d3dhook_imgui</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -159,17 +160,14 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="imgui\GL.h" />
     <ClInclude Include="imgui\gl3w.h" />
+    <ClInclude Include="imgui\GL\GLx64\glew.h" />
+    <ClInclude Include="imgui\GL\GLx64\glxew.h" />
+    <ClInclude Include="imgui\GL\GLx64\wglew.h" />
     <ClInclude Include="imgui\GL\GLx86\glew.h" />
     <ClInclude Include="imgui\GL\GLx86\glxew.h" />
     <ClInclude Include="imgui\GL\GLx86\wglew.h" />
     <ClInclude Include="imgui\imgui_impl_opengl2.h" />
     <ClInclude Include="imgui\imgui_impl_opengl3.h" />
-    <ClInclude Include="imgui\SOIL\image_DXT.h" />
-    <ClInclude Include="imgui\SOIL\image_helper.h" />
-    <ClInclude Include="imgui\SOIL\SOIL.h" />
-    <ClInclude Include="imgui\SOIL\stbi_DDS_aug.h" />
-    <ClInclude Include="imgui\SOIL\stbi_DDS_aug_c.h" />
-    <ClInclude Include="imgui\SOIL\stb_image_aug.h" />
     <ClInclude Include="imgui_constants.h" />
     <ClInclude Include="imgui\glcorearb.h" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -193,6 +191,7 @@
     <ClInclude Include="memory.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common_utils.cpp" />
@@ -200,10 +199,6 @@
     <ClCompile Include="imgui\gl3w.cpp" />
     <ClCompile Include="imgui\imgui_impl_opengl2.cpp" />
     <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="imgui\SOIL\image_DXT.c" />
-    <ClCompile Include="imgui\SOIL\image_helper.c" />
-    <ClCompile Include="imgui\SOIL\SOIL.c" />
-    <ClCompile Include="imgui\SOIL\stb_image_aug.c" />
     <ClCompile Include="imgui_constants.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -234,21 +229,20 @@
     <Library Include="detours.X64\syelog.lib" />
     <Library Include="detours.X86\detours.lib" />
     <Library Include="detours.X86\syelog.lib" />
+    <Library Include="imgui\GL\GLx64\glew32.lib" />
+    <Library Include="imgui\GL\GLx64\glew32s.lib" />
+    <Library Include="imgui\GL\GLx64\OpenGL32.Lib" />
     <Library Include="imgui\GL\GLx86\glew32.lib" />
     <Library Include="imgui\GL\GLx86\glew32s.lib" />
+    <Library Include="imgui\GL\GLx86\OpenGL32.Lib" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="d3dhook_kiero.rc" />
+    <ResourceCompile Include="d3dhook_imgui.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Pictures\green_buffer.png" />
-    <Image Include="..\..\..\..\..\Pictures\red_buffer.png" />
     <Image Include="resource\IMG\DIY.jpg" />
     <Image Include="resource\IMG\green_buffer.png" />
     <Image Include="resource\IMG\red_buffer.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="imgui\SOIL\.DS_Store" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
