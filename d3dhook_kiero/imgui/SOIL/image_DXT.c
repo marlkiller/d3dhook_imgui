@@ -12,8 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#pragma warning(disable:4018)
-#pragma warning(disable:4996)
+
 /*	set this =1 if you want to use the covarince matrix method...
 	which is better than my method of using standard deviations
 	overall, except on the infintesimal chance that the power

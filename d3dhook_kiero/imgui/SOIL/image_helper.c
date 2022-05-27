@@ -5,12 +5,11 @@
 
     MIT license
 */
+
 #include "image_helper.h"
 #include <stdlib.h>
 #include <math.h>
-#pragma warning(disable:4018)
-#pragma warning(disable:4996)
-#pragma warning(disable:4244)
+
 /*	Upscaling the image uses simple bilinear interpolation	*/
 int
 	up_scale_image

@@ -2,8 +2,6 @@
 ///	DDS file support, does decoding, _not_ direct uploading
 ///	(use SOIL for that ;-)
 
-#pragma warning(disable:4018)
-#pragma warning(disable:4996)
 ///	A bunch of DirectDraw Surface structures and flags
 typedef struct {
     unsigned int    dwMagic;
