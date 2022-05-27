@@ -9,6 +9,7 @@
 #include "common_utils.h"
 #include "impl/opengl_impl.h"
 #include "impl/d3d11_impl.h"
+#include "impl/d3d10_impl.h"
 #include "impl/d3d9_impl.h"
 
 
@@ -52,7 +53,7 @@ using namespace std;
 int mainThread()
 {
     //Enum version = OpenGL;
-    Enum version = D3D9;
+    Enum version = D3D11;
     //Enum version = common_utils::GetDirectVersion();
     LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
 
@@ -64,7 +65,7 @@ int mainThread()
         impl::d3d9::init();
         break;
     case D3D10:
-        //impl::d3d10::init();
+        impl::d3d10::init();
         break;
     case D3D11:
         impl::d3d11::init();
