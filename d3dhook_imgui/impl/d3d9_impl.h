@@ -1,7 +1,3 @@
-#ifndef __D3D9_IMPL_H__
-#define __D3D9_IMPL_H__
-
-#include "shared.h"
 
 namespace impl
 {
@@ -11,4 +7,3 @@ namespace impl
 	}
 }
 
-#endif // __D3D9_IMPL_H__

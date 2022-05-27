@@ -451,7 +451,30 @@ void DrawMainWin()
     }
 }
 
+void DrawGreetWin() {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    // greetings
+    if (greetings)
+    {
+        float sub_win_width = 300;
+        float sub_win_height = 40;
+        ImGui::SetNextWindowSize(ImVec2(sub_win_width, sub_win_height));
+        ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - (sub_win_width / 2), io.DisplaySize.y / 2 - (sub_win_height / 2)));
 
+        ImGui::Begin("title", &greetings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
+        ImGui::Text("Plugin loaded, press INSERT for menu");
+        ImGui::End();
+
+        static DWORD lastTime = timeGetTime();
+        DWORD timePassed = timeGetTime() - lastTime;
+        if (timePassed > 6000)
+        {
+            //LOG_INFO("greetings init timePassed {%d}", timePassed);
+            greetings = false;
+            lastTime = timeGetTime();
+        }
+    }
+}
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -463,4 +486,31 @@ LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 
 return CallWindowProc(oWndProcHandler, hWnd, uMsg, wParam, lParam);
+}
+
+static BOOL CALLBACK cbEnumProc(HWND hwnd, LPARAM lparam)
+{
+    DWORD pid;
+    GetWindowThreadProcessId(hwnd, &pid);
+    EPINFO* pwi = (EPINFO*)lparam;
+    if (pid == pwi->pid)
+    {
+        HWND _hwnd = GetParent(hwnd);
+        if (_hwnd != NULL)
+        {
+            pwi->hwnd = _hwnd;
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+// 获取主窗口句柄
+HWND GetMainHWnd(DWORD pid)
+{
+    EPINFO wi{ 0 };
+    wi.pid = pid;
+    EnumWindows(cbEnumProc, (LPARAM)&wi);
+
+    return wi.hwnd;
 }

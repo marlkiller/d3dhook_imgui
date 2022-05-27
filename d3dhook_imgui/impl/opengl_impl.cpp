@@ -363,6 +363,7 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+        DrawGreetWin();
         DrawMainWin();
         DrawOpenGLDIY();
 
