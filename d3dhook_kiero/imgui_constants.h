@@ -97,6 +97,8 @@ extern const char* has_focus_items[];
 
 extern void DrawMainWin();
 
+extern void doGl3wInit();
+
 extern ImVector<DrawItem> table_items;
 extern ImVector<int> selection;
 

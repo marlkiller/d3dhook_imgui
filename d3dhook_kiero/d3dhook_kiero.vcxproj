@@ -95,7 +95,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,7 +115,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -123,7 +123,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;D3DHOOKKIERO_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
@@ -140,7 +140,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;D3DHOOKKIERO_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
@@ -150,7 +150,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -158,26 +158,25 @@
     <ClInclude Include="detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="imgui\GL.h" />
-    <ClInclude Include="imgui\GLU.h" />
-    <ClInclude Include="imgui\image_DXT.h" />
-    <ClInclude Include="imgui\image_helper.h" />
-    <ClInclude Include="imgui\soil.h" />
-    <ClInclude Include="imgui\stbi_DDS_aug.h" />
-    <ClInclude Include="imgui\stbi_DDS_aug_c.h" />
-    <ClInclude Include="imgui\stb_image_aug.h" />
-    <ClInclude Include="imgui\stb_rect_pack.h" />
-    <ClInclude Include="imgui\stb_textedit.h" />
-    <ClInclude Include="imgui\stb_truetype.h" />
-    <ClInclude Include="imgui_constants.h" />
     <ClInclude Include="imgui\gl3w.h" />
+    <ClInclude Include="imgui\GL\GLx86\glew.h" />
+    <ClInclude Include="imgui\GL\GLx86\glxew.h" />
+    <ClInclude Include="imgui\GL\GLx86\wglew.h" />
+    <ClInclude Include="imgui\imgui_impl_opengl2.h" />
+    <ClInclude Include="imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="imgui\SOIL\image_DXT.h" />
+    <ClInclude Include="imgui\SOIL\image_helper.h" />
+    <ClInclude Include="imgui\SOIL\SOIL.h" />
+    <ClInclude Include="imgui\SOIL\stbi_DDS_aug.h" />
+    <ClInclude Include="imgui\SOIL\stbi_DDS_aug_c.h" />
+    <ClInclude Include="imgui\SOIL\stb_image_aug.h" />
+    <ClInclude Include="imgui_constants.h" />
     <ClInclude Include="imgui\glcorearb.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_dx10.h" />
     <ClInclude Include="imgui\imgui_impl_dx11.h" />
     <ClInclude Include="imgui\imgui_impl_dx9.h" />
-    <ClInclude Include="imgui\imgui_impl_opengl2.h" />
-    <ClInclude Include="imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="imgui\imgui_impl_win32.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="imgui\imstb_rectpack.h" />
@@ -198,20 +197,20 @@
   <ItemGroup>
     <ClCompile Include="common_utils.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="imgui\image_DXT.cpp" />
-    <ClCompile Include="imgui\image_helper.cpp" />
-    <ClCompile Include="imgui\soil.cpp" />
-    <ClCompile Include="imgui\stb_image_aug.cpp" />
-    <ClCompile Include="imgui_constants.cpp" />
     <ClCompile Include="imgui\gl3w.cpp" />
+    <ClCompile Include="imgui\imgui_impl_opengl2.cpp" />
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="imgui\SOIL\image_DXT.c" />
+    <ClCompile Include="imgui\SOIL\image_helper.c" />
+    <ClCompile Include="imgui\SOIL\SOIL.c" />
+    <ClCompile Include="imgui\SOIL\stb_image_aug.c" />
+    <ClCompile Include="imgui_constants.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
     <ClCompile Include="imgui\imgui_impl_dx10.cpp" />
     <ClCompile Include="imgui\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui\imgui_impl_dx9.cpp" />
-    <ClCompile Include="imgui\imgui_impl_opengl2.cpp" />
-    <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
@@ -235,6 +234,8 @@
     <Library Include="detours.X64\syelog.lib" />
     <Library Include="detours.X86\detours.lib" />
     <Library Include="detours.X86\syelog.lib" />
+    <Library Include="imgui\GL\GLx86\glew32.lib" />
+    <Library Include="imgui\GL\GLx86\glew32s.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="d3dhook_kiero.rc" />
@@ -245,6 +246,9 @@
     <Image Include="resource\IMG\DIY.jpg" />
     <Image Include="resource\IMG\green_buffer.png" />
     <Image Include="resource\IMG\red_buffer.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imgui\SOIL\.DS_Store" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

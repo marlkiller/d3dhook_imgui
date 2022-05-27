@@ -63,8 +63,6 @@
              on 'test' only check type, not whether we support this variant
 */
 
-#pragma warning(disable:4996)
-#pragma warning(disable:4838)
 #include "stb_image_aug.h"
 
 #ifndef STBI_NO_HDR
