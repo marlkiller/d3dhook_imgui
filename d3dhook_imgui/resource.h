@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ 生成的包含文件。
-// 供 d3dhook_kiero.rc 使用
+// 供 d3dhook_imgui.rc 使用
 //
 #define IDB_PNG1                        102
 #define IDB_PNG2                        103
