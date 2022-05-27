@@ -28,11 +28,13 @@
 #endif
 //#include <gl/gl.h> 
 //#pragma comment(lib,"opengl32.lib")
+
 #pragma endregion
 
 #include <exception>
 #include "../imgui/imgui_impl_opengl2.h"
-//#include "../imgui/imgui_impl_opengl3.h"
+#include "../imgui/imgui_impl_opengl3.h"
+
 #include <string>
 #include "../imgui/GL.h"
 #include "../imgui/glcorearb.h"
@@ -42,11 +44,7 @@
 
 
 
-//#include <gl/gl.h> 
-#pragma comment(lib,"opengl32.lib")
-
 #define PI 3.1415926
-
 
 
 typedef BOOL(APIENTRY* wglSwapBuffers)(HDC  hdc);
@@ -317,6 +315,8 @@ void DrawOpenGLDIY() {
     }
 }
 
+static bool is_old = false;
+
 BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
 {
 
@@ -330,7 +330,7 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
             GAME_HWND = WindowFromDC(hdc);
             oWndProcHandler = (WNDPROC)SetWindowLongPtr(GAME_HWND, WNDPROC_INDEX, (LONG_PTR)hWndProc);
 
-            bool is_old;
+            
             GLint iMajor, iMinor;
             glGetIntegerv(GL_MAJOR_VERSION, &iMajor);
             glGetIntegerv(GL_MINOR_VERSION, &iMinor);
@@ -340,11 +340,16 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
             LOG_INFO("opengl is_old -> {%d}", is_old);
 
             // TODO Support OpenGL3
-            //glewInit();
             ImGui::CreateContext();
+            //gl3wInit();
             ImGui_ImplWin32_Init(GAME_HWND);
-
-            ImGui_ImplOpenGL2_Init();
+            if (is_old)
+                ImGui_ImplOpenGL2_Init();
+            else {
+                doGl3wInit();
+                ImGui_ImplOpenGL3_Init();
+                LOG_INFO("ImGui_ImplOpenGL3_Init", is_old);
+            }
             //LoadTextureFile(1,"C:\\Users\\voidm\\Desktop\\111.jpg"); 
             LoadTextureMemary(1, IDB_PNG1, "PNG"); // RED
             LoadTextureMemary(2, IDB_PNG2, "PNG"); // GREEN
@@ -354,8 +359,11 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
             init = true;
         }
 
+        if (is_old)
+            ImGui_ImplOpenGL2_NewFrame();
+        else
+            ImGui_ImplOpenGL3_NewFrame();
 
-        ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
@@ -364,7 +372,10 @@ BOOL __stdcall hkWGLSwapBuffers(HDC hdc)
 
         ImGui::EndFrame();
         ImGui::Render();
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+        if (is_old)
+            ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+        else
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
 

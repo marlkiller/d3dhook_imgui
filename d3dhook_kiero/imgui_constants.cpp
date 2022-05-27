@@ -5,6 +5,7 @@
 #include "imgui_draw_util.h"
 #include "common_utils.h"
 #include "imgui/imgui_internal.h"
+#include "imgui/gl3w.h"
 
 
 HMODULE Dll_HWND = nullptr;
@@ -69,6 +70,9 @@ ImVector<int> selection;
 
 WNDPROC oWndProcHandler = nullptr;
 
+void doGl3wInit(){
+    gl3wInit();
+}
 
 void PushColor() {
     ImGui::PushID(3);

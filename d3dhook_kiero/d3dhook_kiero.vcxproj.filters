@@ -147,6 +147,12 @@
     <ClInclude Include="imgui\GL\GLx86\wglew.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="imgui\gl3w.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_impl_opengl3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -225,6 +231,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="imgui\SOIL\stb_image_aug.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\gl3w.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

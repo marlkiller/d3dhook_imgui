@@ -158,10 +158,12 @@
     <ClInclude Include="detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="imgui\GL.h" />
+    <ClInclude Include="imgui\gl3w.h" />
     <ClInclude Include="imgui\GL\GLx86\glew.h" />
     <ClInclude Include="imgui\GL\GLx86\glxew.h" />
     <ClInclude Include="imgui\GL\GLx86\wglew.h" />
     <ClInclude Include="imgui\imgui_impl_opengl2.h" />
+    <ClInclude Include="imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="imgui\SOIL\image_DXT.h" />
     <ClInclude Include="imgui\SOIL\image_helper.h" />
     <ClInclude Include="imgui\SOIL\SOIL.h" />
@@ -195,7 +197,9 @@
   <ItemGroup>
     <ClCompile Include="common_utils.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="imgui\gl3w.cpp" />
     <ClCompile Include="imgui\imgui_impl_opengl2.cpp" />
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\SOIL\image_DXT.c" />
     <ClCompile Include="imgui\SOIL\image_helper.c" />
     <ClCompile Include="imgui\SOIL\SOIL.c" />
