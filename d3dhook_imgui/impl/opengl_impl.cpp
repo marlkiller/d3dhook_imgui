@@ -133,31 +133,6 @@ typedef struct PlayerData
     bool is_death;
 }PlayerData;
 
-bool WorldToScreen(float position[3], float screen[2], float matrix[16], int windowWidth, int windowHeight)
-{
-    //Matrix-vector Product, multiplying world(eye) coordinates by projection matrix = clipCoords
-    float clipCoords[4];
-    clipCoords[0] = position[0] * matrix[0] + position[1] * matrix[4] + position[2] * matrix[8] + matrix[12];
-    clipCoords[1] = position[0] * matrix[1] + position[1] * matrix[5] + position[2] * matrix[9] + matrix[13];
-    clipCoords[2] = position[0] * matrix[2] + position[1] * matrix[6] + position[2] * matrix[10] + matrix[14];
-    clipCoords[3] = position[0] * matrix[3] + position[1] * matrix[7] + position[2] * matrix[11] + matrix[15];
-
-    if (clipCoords[3] < 0.1f)
-        return false;
-
-    //perspective division, dividing by clip.W = Normalized Device Coordinates
-    float NDC[3];
-    NDC[0] = clipCoords[0] / clipCoords[3];
-    NDC[1] = clipCoords[1] / clipCoords[3];
-    NDC[2] = clipCoords[2] / clipCoords[3];
-
-    screen[0] = (windowWidth / 2 * NDC[0]) + (NDC[0] + windowWidth / 2);
-    screen[1] = -(windowHeight / 2 * NDC[1]) + (NDC[1] + windowHeight / 2);
-
-    //OUTPUT_DEBUG(L"screen %f,%f", screen[0], screen[1]);
-
-    return true;
-}
 void LoadGameInfo() {
 
     g_hProcess = GetCurrentProcess();
@@ -178,8 +153,6 @@ void ReadDataList(int index, PlayerData* data)
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x8), &data->position, sizeof(float[3]), 0);//Î»ÖÃ x,y,z
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x160), &data->hp, sizeof(float), 0);//ÑªÁ¿
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x62565C + (index * 0x68) + 0x60), &data->is_death, sizeof(bool), 0);
-
-
 }
 
 void DrawOpenGLDIY() {

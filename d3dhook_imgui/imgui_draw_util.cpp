@@ -4,6 +4,34 @@
 #include "imgui_draw_util.h"
 
 
+
+
+bool WorldToScreen(float position[3], float screen[2], float matrix[16], int windowWidth, int windowHeight)
+{
+    //Matrix-vector Product, multiplying world(eye) coordinates by projection matrix = clipCoords
+    float clipCoords[4];
+    clipCoords[0] = position[0] * matrix[0] + position[1] * matrix[4] + position[2] * matrix[8] + matrix[12];
+    clipCoords[1] = position[0] * matrix[1] + position[1] * matrix[5] + position[2] * matrix[9] + matrix[13];
+    clipCoords[2] = position[0] * matrix[2] + position[1] * matrix[6] + position[2] * matrix[10] + matrix[14];
+    clipCoords[3] = position[0] * matrix[3] + position[1] * matrix[7] + position[2] * matrix[11] + matrix[15];
+
+    if (clipCoords[3] < 0.1f)
+        return false;
+
+    //perspective division, dividing by clip.W = Normalized Device Coordinates
+    float NDC[3];
+    NDC[0] = clipCoords[0] / clipCoords[3];
+    NDC[1] = clipCoords[1] / clipCoords[3];
+    NDC[2] = clipCoords[2] / clipCoords[3];
+
+    screen[0] = (windowWidth / 2 * NDC[0]) + (NDC[0] + windowWidth / 2);
+    screen[1] = -(windowHeight / 2 * NDC[1]) + (NDC[1] + windowHeight / 2);
+
+    //OUTPUT_DEBUG(L"screen %f,%f", screen[0], screen[1]);
+
+    return true;
+}
+
 void DrawTextVal(int x,int y, const ImColor& color, const char* val) {
     ImGui::GetBackgroundDrawList()->AddText(ImVec2(x, y), color, val);
 }

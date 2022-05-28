@@ -8,7 +8,7 @@ enum
     FL_CENTER_X = 1 << 3,
     FL_CENTER_Y = 1 << 4
 };
-
+bool WorldToScreen(float position[3], float screen[2], float matrix[16], int windowWidth, int windowHeight);
 void DrawTextVal(int x, int y, const ImColor& color, const char* val);
 void AddImage(const ImVec2& position, const ImVec2& size, const ImTextureID pTexture, const ImColor& color);
 void AddCircleFilled(const ImVec2& position, float radius, const ImColor& color, int segments = 100);

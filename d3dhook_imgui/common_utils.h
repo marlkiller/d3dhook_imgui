@@ -19,6 +19,7 @@ enum Enum
 };
 
 namespace common_utils {
+    void SearchModules();
     void getGameRect(HWND hwndGame, RECT& RectGame);
     int GetRandNumber(const int low, const int high);
     Enum GetDirectVersion();

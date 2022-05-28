@@ -24,8 +24,24 @@ namespace common_utils {
 		return randNum;
 	}
 
-	Enum GetDirectVersion();
-
+	void SearchModules() {
+		HMODULE handler;
+		handler = GetModuleHandle("opengl32.dll");
+		LOG_INFO("opengl32.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		handler = GetModuleHandle("vulkan-1.dll");
+		LOG_INFO("vulkan-1.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		handler = GetModuleHandle("d3d9.dll");
+		LOG_INFO("d3d9.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		handler = GetModuleHandle("d3d10.dll");
+		LOG_INFO("d3d10.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		handler = GetModuleHandle("d3d11.dll");
+		LOG_INFO("d3d11.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		handler = GetModuleHandle("d3d12.dll");
+		LOG_INFO("d3d12.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		
+		
+		
+	}
 	const char* enum_to_string(int index) {
 		const char* enum_vals[] = { "None", "D3D9", "D3D10", "D3D11", "D3D12", "OpenGL", "Vulkan" };
 		return  enum_vals[index];

@@ -105,15 +105,16 @@ void DrawMainWin()
     if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
     io.MouseDrawCursor = p_open;
     //LOG_INFO("p_open %d", p_open);
+    ImGuiContext& g = *GImGui;
+    HWND_SCREEN_X = g.Viewports[0]->Size.x;
+    HWND_SCREEN_Y = g.Viewports[0]->Size.y;
 
     if (p_open)
     {
-        ImGuiContext& g = *GImGui;
         ImGui::SetNextWindowBgAlpha(bg_alpha);
         ImGui::Begin("My Windows ");
-        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g), Wnd :(%f,%f)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y, g.Viewports[0]->Size.x, g.Viewports[0]->Size.y);
-        HWND_SCREEN_X = g.Viewports[0]->Size.x;
-        HWND_SCREEN_Y = g.Viewports[0]->Size.y;
+        ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g), Wnd :(%f,%f)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y, HWND_SCREEN_X, HWND_SCREEN_Y);
+        
         ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
         
         ImGui::Checkbox("DrawDemo", &draw_demo);
@@ -525,16 +526,18 @@ HWND GetHwndByPid(DWORD dwProcessID)
             {
                 char buf[128];
                 GetWindowText(hWnd, buf, sizeof(buf));
-                //LOG_INFO("GetWindowText-> %s", buf);
                 bool filter = true;
 
-                if (strstr(buf, "MSCTFIME UI")|| strstr(buf, "Default IME")|| strstr(buf, "[d3d]")) {
+                if (strstr(buf, "MSCTFIME UI")|| strstr(buf, "Default IME")|| strstr(buf, "[Console-Wind]")) {
                     filter = false;
-                    LOG_INFO("Win title is filtered { %s }", buf);
+                    LOG_INFO("Win title is igonre { %s } - {%d}", buf, hWnd);
                 }
                
-                if (filter)
+                if (filter) {
+                    LOG_INFO("Target Win title is { %s } - {%d}", buf, hWnd);
                     return hWnd;
+                }
+                    
             }
         }
         //返回z序中的前一个或后一个窗口的句柄

@@ -11,29 +11,24 @@
 
 using namespace std;
 
-Enum version = D3D9;
+Enum version = None;
 
 
 
 #if version==D3D9
 # include "impl/d3d9_impl.h"
 #endif
-
 #if  version==D3D10
 # include "impl/d3d10_impl.h"
 #endif
-
 #if  version==D3D11
 # include "impl/d3d11_impl.h"
 #endif
-
 #if KIERO_INCLUDE_D3D12
 #endif
-
 #if  version==OpenGL
 # include "impl/opengl_impl.h"
 #endif
-
 #if version==Vulkan
 #endif
 #if version==None
@@ -50,6 +45,7 @@ Enum version = D3D9;
 
 int mainThread()
 {
+    common_utils::SearchModules();
     //Enum version = common_utils::GetDirectVersion();
     LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
 
