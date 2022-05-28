@@ -1,20 +1,21 @@
 ﻿
 #include "win32_impl.h"
 #include <Windows.h>
+#include <d3d11.h>
 
 #include "../imgui_constants.h"
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_impl_win32.h"
-#include <d3d11.h>
 #include "../imgui/imgui_impl_dx11.h"
 #include "../logger.h"
 #include "../common_utils.h"
+#include "../imgui_draw_util.h"
 
 static ID3D11Device* g_pd3dDevice = NULL;
 static ID3D11DeviceContext* g_pd3dDeviceContext = NULL;
 static IDXGISwapChain* g_pSwapChain = NULL;
 static ID3D11RenderTargetView* g_mainRenderTargetView = NULL;
-ImVec4 clear_color = ImColor(114, 114, 114, 255).Value;
+static ImVec4 clear_color = ImColor(114, 114, 114, 255).Value;
 static RECT RectGame = { 100,100,100,100 };
 
 
@@ -96,8 +97,6 @@ bool CreateDeviceD3D(HWND hWnd)
     return true;
 }
 
-
-bool bind_out_window = false;
 void impl::win32::init()
 {
 
@@ -111,7 +110,6 @@ void impl::win32::init()
     {
         //GAME_HWND = GetMainHWnd(GetCurrentProcessId());
         GAME_HWND = GetHwndByPid(GetCurrentProcessId());
-
         //GAME_HWND = FindWindow(NULL, TEXT("无标题 - 记事本"));
         if (GAME_HWND)
             common_utils::getGameRect(GAME_HWND, RectGame);

@@ -137,7 +137,7 @@ void __cdecl LogPrinter::OpenConsole() {
             mConsoleOutBackup = cout.rdbuf();
             mConsoleOut = freopen("CONOUT$", "w", stdout);
             char nt[100];
-            sprintf_s(nt, "日志[%s]-%lld-%d", "d3d", GetTickCount64(), GetCurrentProcessId());
+            sprintf_s(nt, "日志[%s]-%lld-%d", "Console-Wind", GetTickCount64(), GetCurrentProcessId());
             SetConsoleTitleA(nt);
             Sleep(100);
             HWND find = FindWindowA(NULL, nt);
@@ -146,7 +146,7 @@ void __cdecl LogPrinter::OpenConsole() {
                 if (menu) {
                     if (!needMenu) {
                         if (RemoveMenu(menu, 0xF060, 0)) {
-                            sprintf_s(nt, "日志[%s]-%lld-%d-已屏蔽关闭按钮", "d3d", GetTickCount64(), GetCurrentProcessId());
+                            sprintf_s(nt, "日志[%s]-%lld-%d-已屏蔽关闭按钮", "Console-Wind", GetTickCount64(), GetCurrentProcessId());
                             SetConsoleTitleA(nt);
                         }
                     }
