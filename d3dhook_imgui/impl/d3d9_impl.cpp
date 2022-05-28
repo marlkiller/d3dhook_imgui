@@ -103,14 +103,7 @@ void impl::d3d9::init()
 	}
 	LOG_INFO("[d3d9] CreateDevice D3D_OK");
 
-	// We have the device, so walk the vtable to get the address of all the dx functions in d3d9.dll
-#if defined _M_X64
-	DWORD64* dVtable = (DWORD64*)pDevice;
-	dVtable = (DWORD64*)dVtable[0];
-#elif defined _M_IX86
-	DWORD* dVtable = (DWORD*)pDevice;
-	dVtable = (DWORD*)dVtable[0]; // == *d3ddev
-#endif
+
 	void** pVTable = *reinterpret_cast<void***>(pDevice);
 
 
@@ -119,7 +112,7 @@ void impl::d3d9::init()
 	//MH_CreateHook((DWORD_PTR*)dVtable[42], &hkEndScene, reinterpret_cast<void**>(&oEndScene)
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(LPVOID&)oEndScene, /*(PBYTE)*/hkEndScene);
+	DetourAttach(&(LPVOID&)oEndScene, (PBYTE)hkEndScene);
 	DetourTransactionCommit();
 	LOG_INFO("DetourTransactionBegin hook complete >> oEndScene {%x}-> hkEndScene {%x}", oEndScene, hkEndScene);
 
@@ -134,5 +127,7 @@ void impl::d3d9::init()
 	//SetPixelShader_orig = (SetPixelShader)dVtable[107];
 	//SetTexture_orig = (SetTexture)dVtable[65];
 	//SetViewport_orig = (SetViewport)dVtable[47];
-
+	pDevice->Release();
+	d3d->Release();
+	DestroyWindow(tmpWnd);
 }

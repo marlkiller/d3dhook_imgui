@@ -16,6 +16,7 @@
 #include <DirectXMath.h>
 #include <vector>
 #pragma comment(lib, "winmm.lib ")
+#pragma comment(lib, "d3d11.lib")
 
 
 typedef HRESULT(__stdcall* Present) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);

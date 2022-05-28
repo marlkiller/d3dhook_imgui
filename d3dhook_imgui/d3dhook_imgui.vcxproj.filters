@@ -71,7 +71,7 @@
       <Filter>ImGui\impl</Filter>
     </ClCompile>
     <ClCompile Include="impl\win32_impl.cpp">
-      <Filter>ImGui\SDK</Filter>
+      <Filter>ImGui\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -184,7 +184,7 @@
       <Filter>ImGui\SDK\GL\x64</Filter>
     </ClInclude>
     <ClInclude Include="impl\win32_impl.h">
-      <Filter>ImGui\SDK</Filter>
+      <Filter>ImGui\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
