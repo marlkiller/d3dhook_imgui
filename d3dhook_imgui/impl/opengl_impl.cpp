@@ -135,9 +135,9 @@ typedef struct PlayerData
 
 void LoadGameInfo() {
 
-    g_hProcess = GetCurrentProcess();
+    g_hProcess = (HANDLE)-1; // current process -1
     cstrike_base = (uintptr_t)GetModuleHandle("cstrike.exe");
-    LOG_INFO("g_hProcess -> %x, cstrike.exe -> %x", g_hProcess, cstrike_base);
+    LOG_INFO("g_hProcess -> %d, g_hProcessId -> %d, cstrike.exe -> %x", GetCurrentProcess(), GetCurrentProcessId(), cstrike_base);
     if (cstrike_base)
         game_load_flag = true;
     else
@@ -146,7 +146,10 @@ void LoadGameInfo() {
 void ReadDataList(int index, PlayerData* data)
 {
     //[[[cstrike.exe + 11069BC]+ 7C + (i*324)] + 4] + 8
+    // FIXME why ERROR with memcpy
     DWORD addr;
+    //memcpy(&addr, (PBYTE*)(cstrike_base + 0x11069BC), sizeof(DWORD));
+    //OUTPUT_DEBUG(L"memccpy -> %x", addr);
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x11069BC), &addr, sizeof(DWORD), 0);
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD), 0);//»ùÖ·
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x4), &addr, sizeof(DWORD), 0);//2¼¶»ùÖ·
@@ -184,11 +187,11 @@ void DrawOpenGLDIY() {
     if (my_data.is_death)
         return;
 
-    int numb = 0;
-    int FOV;
-    memcpy(&numb, (PBYTE*)(cstrike_base + el_num_base), sizeof(numb));
+    int numb , FOV = 0;
+    //memcpy(&numb, (PBYTE*)(cstrike_base + el_num_base), sizeof(numb));
     float CursorAngle_X, CursorAngle_Y, CursorAngle_FOV_X, CursorAngle_FOV_Y, CursorAngle_FOV_Z;
-    memcpy(&FOV, (PBYTE*)(cstrike_base + 0x617AC8), 4);
+    ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + el_num_base), &numb, sizeof(numb), 0);
+    ReadProcessMemory(g_hProcess , (PBYTE*)(cstrike_base + 0x617AC8), &FOV, sizeof(FOV),0);
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_X_offset), &CursorAngle_X, sizeof(CursorAngle_X), 0);
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_Y_offset), &CursorAngle_Y, sizeof(CursorAngle_Y), 0);
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + Control_CursorAngle_FOV_X), &CursorAngle_FOV_X, sizeof(CursorAngle_FOV_X), 0);
@@ -270,8 +273,9 @@ void DrawOpenGLDIY() {
 
         }
         else if (draw_esp_flag == 2) {
-            txt_val = "draw_by_matrix";
-            WorldToScreen(el_data.position, screen, matrix, HWND_SCREEN_X, HWND_SCREEN_Y); //model center position, plz add offset
+            txt_val = "draw_by_matrix";//model center position, plz add offset
+            if (!WorldToScreen(el_data.position, screen, matrix, HWND_SCREEN_X, HWND_SCREEN_Y))
+                continue;
         }
         float offset = 1000 / distance;
         w = 16.666666 * offset * 90 / FOV;
