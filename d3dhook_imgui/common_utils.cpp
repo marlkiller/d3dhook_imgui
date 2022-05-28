@@ -8,6 +8,15 @@
 namespace common_utils {
 	
 
+	void getGameRect(HWND hwndGame, RECT& RectGame) {
+		RECT stRect, stKhRect;
+		GetWindowRect(hwndGame, &stRect);
+		GetClientRect(hwndGame, &stKhRect);
+		RectGame.left = stRect.left;
+		RectGame.right = stRect.right;
+		RectGame.top = stRect.bottom - stKhRect.bottom;
+		RectGame.bottom = stRect.bottom;
+	}
 	int GetRandNumber(const int low, const int high)
 	{
 		int randNum = 0;

@@ -7,41 +7,39 @@
 #include "logger.h"
 #include <iostream>
 #include "common_utils.h"
-#include "impl/opengl_impl.h"
-#include "impl/d3d11_impl.h"
-#include "impl/d3d10_impl.h"
-#include "impl/d3d9_impl.h"
 
 
 using namespace std;
 
-//
-//
-//#if KIERO_INCLUDE_D3D9
-//# include "impl/d3d9_impl.h"
-//#endif
-//
-//#if KIERO_INCLUDE_D3D10
-//# include "impl/d3d10_impl.h"
-//#endif
-//
-//#if KIERO_INCLUDE_D3D11
-//# include "impl/d3d11_impl.h"
-//#endif
-//
-//#if KIERO_INCLUDE_D3D12
-//#endif
-//
-//#if KIERO_INCLUDE_OPENGL
-//# include "impl/opengl_impl.h"
-//#endif
-//
-//#if KIERO_INCLUDE_VULKAN
-//#endif
-//
-//#if !KIERO_USE_MINHOOK
-//# error "The example requires that minhook be enabled!"
-//#endif
+Enum version = None;
+
+
+
+#if version==D3D9
+# include "impl/d3d9_impl.h"
+#endif
+
+#if  version==D3D10
+# include "impl/d3d10_impl.h"
+#endif
+
+#if  version==D3D11
+# include "impl/d3d11_impl.h"
+#endif
+
+#if KIERO_INCLUDE_D3D12
+#endif
+
+#if  version==OpenGL
+# include "impl/opengl_impl.h"
+#endif
+
+#if version==Vulkan
+#endif
+#if version==None
+# include "impl/win32_impl.h"
+#endif
+ 
 
 #ifdef _DEBUG
 #define CONSOLE_LOGGING true
@@ -52,14 +50,14 @@ using namespace std;
 
 int mainThread()
 {
-    //Enum version = OpenGL;
-    Enum version = D3D11;
     //Enum version = common_utils::GetDirectVersion();
     LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
+
 
     switch (version)
     {
     case None:
+        impl::win32::init();
         break;
     case D3D9:
         impl::d3d9::init();

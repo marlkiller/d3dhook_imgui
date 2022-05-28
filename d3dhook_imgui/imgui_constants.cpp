@@ -6,6 +6,7 @@
 #include "common_utils.h"
 #include "imgui/imgui_internal.h"
 #include "imgui/gl3w.h"
+#include "logger.h"
 
 
 HMODULE Dll_HWND = nullptr;
@@ -103,6 +104,7 @@ void DrawMainWin()
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
     io.MouseDrawCursor = p_open;
+    //LOG_INFO("p_open %d", p_open);
 
     if (p_open)
     {
@@ -505,6 +507,43 @@ static BOOL CALLBACK cbEnumProc(HWND hwnd, LPARAM lparam)
 
     return TRUE;
 }
+
+HWND GetHwndByPid(DWORD dwProcessID)
+{
+    //返回Z序顶部的窗口句柄
+    HWND hWnd = ::GetTopWindow(0);
+
+    while (hWnd)
+    {
+        DWORD pid = 0;
+        //根据窗口句柄获取进程ID
+        DWORD dwTheardId = ::GetWindowThreadProcessId(hWnd, &pid);
+       
+        if (dwTheardId != 0)
+        {
+            if (pid == dwProcessID)
+            {
+                char buf[128];
+                GetWindowText(hWnd, buf, sizeof(buf));
+                //LOG_INFO("GetWindowText-> %s", buf);
+                bool filter = true;
+
+                if (strstr(buf, "MSCTFIME UI")|| strstr(buf, "Default IME")|| strstr(buf, "[d3d]")) {
+                    filter = false;
+                    LOG_INFO("Win title is filtered { %s }", buf);
+                }
+               
+                if (filter)
+                    return hWnd;
+            }
+        }
+        //返回z序中的前一个或后一个窗口的句柄
+        hWnd = ::GetNextWindow(hWnd, GW_HWNDNEXT);
+
+    }
+    return hWnd;
+}
+
 // 获取主窗口句柄
 HWND GetMainHWnd(DWORD pid)
 {

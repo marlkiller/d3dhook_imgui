@@ -115,4 +115,5 @@ struct EPINFO
     HWND hwnd;
 };
 
+extern HWND GetHwndByPid(DWORD dwProcessID);
 extern HWND GetMainHWnd(DWORD pid);
