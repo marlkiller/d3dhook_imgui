@@ -135,7 +135,8 @@ typedef struct PlayerData
 
 void LoadGameInfo() {
 
-    g_hProcess = (HANDLE)-1; // current process -1
+    //g_hProcess = (HANDLE)-1; // current process -1
+    g_hProcess = GetCurrentProcess(); // current process -1
     cstrike_base = (uintptr_t)GetModuleHandle("cstrike.exe");
     LOG_INFO("g_hProcess -> %d, g_hProcessId -> %d, cstrike.exe -> %x", GetCurrentProcess(), GetCurrentProcessId(), cstrike_base);
     if (cstrike_base)
@@ -147,12 +148,13 @@ void ReadDataList(int index, PlayerData* data)
 {
     //[[[cstrike.exe + 11069BC]+ 7C + (i*324)] + 4] + 8
     // FIXME why ERROR with memcpy
-    DWORD addr;
-    //memcpy(&addr, (PBYTE*)(cstrike_base + 0x11069BC), sizeof(DWORD));
-    //OUTPUT_DEBUG(L"memccpy -> %x", addr);
-    ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x11069BC), &addr, sizeof(DWORD), 0);
-    ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD), 0);//基址
-    ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x4), &addr, sizeof(DWORD), 0);//2级基址
+    DWORD_PTR addr; // DWORD即双字，在64位和32位系统下这个值始终是32位的，而DWORD_PTR可以根据编译的系统类型，编译器自动选择相对应的位数
+    /*char arr[4] = {0};
+    memcpy(&arr, (DWORD_PTR*)(cstrike_base + 0x11069BC), sizeof(DWORD_PTR));
+    sscanf(arr, "%x", &addr);*/
+    ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x11069BC), &addr, sizeof(DWORD_PTR), 0);
+    ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x7C + (index * 0x324)), &addr, sizeof(DWORD_PTR), 0);//基址
+    ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x4), &addr, sizeof(DWORD_PTR), 0);//2级基址
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x8), &data->position, sizeof(float[3]), 0);//位置 x,y,z
     ReadProcessMemory(g_hProcess, (PBYTE*)(addr + 0x160), &data->hp, sizeof(float), 0);//血量
     ReadProcessMemory(g_hProcess, (PBYTE*)(cstrike_base + 0x62565C + (index * 0x68) + 0x60), &data->is_death, sizeof(bool), 0);
