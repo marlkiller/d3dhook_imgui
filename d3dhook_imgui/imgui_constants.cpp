@@ -104,6 +104,8 @@ void DrawMainWin()
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     if (GetAsyncKeyState(VK_INSERT) & 1) p_open = !p_open;
     io.MouseDrawCursor = p_open;
+   /* io.WantCaptureMouse = p_open;
+    io.WantCaptureKeyboard = p_open;*/
     //LOG_INFO("p_open %d", p_open);
     ImGuiContext& g = *GImGui;
     HWND_SCREEN_X = g.Viewports[0]->Size.x;
