@@ -8,7 +8,10 @@
 #include "imgui/gl3w.h"
 #include "logger.h"
 
-
+//EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);//ÉùÃ÷
+//extern "C" __int64 __stdcall  vt_dev1();
+EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3);//ÉùÃ÷
+ 
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
 float HWND_SCREEN_X;
@@ -115,8 +118,30 @@ void DrawMainWin()
     {
         ImGui::SetNextWindowBgAlpha(bg_alpha);
         ImGui::Begin("My Windows ");
+        if (ImGui::Button("_asm CallTest"))
+        {
+            char* title = "this is title";
+            char* val = "this is val";
+            DWORD_PTR lpAddr = (DWORD_PTR)GetProcAddress(GetModuleHandle("user32.dll"), "MessageBoxA");
+
+            #if defined(_M_X64)	
+            asm_msg_box_x64(title, val, lpAddr);
+            #else
+              _asm {
+                  push 0;
+                  mov eax, title;
+                  push eax;
+                  mov eax, val;
+                  push eax;
+                  push 0;
+                  mov eax, lpAddr;
+                  call eax;
+              }
+            #endif
+
+            
+        }
         ImGui::Text("Application average \n%.3f ms/frame (%.1f FPS) , Mouse pos: (%g, %g), Wnd :(%f,%f)", 1000.0f / io.Framerate, io.Framerate, io.MousePos.x, io.MousePos.y, HWND_SCREEN_X, HWND_SCREEN_Y);
-        
         ImGui::Text("Item with focus: %s", has_focus_items[has_focus]);
         
         ImGui::Checkbox("DrawDemo", &draw_demo);

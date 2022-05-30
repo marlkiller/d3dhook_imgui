@@ -277,4 +277,9 @@
       <UniqueIdentifier>{464530e8-34e6-4f90-bdc8-4587c2af147d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="_msg_box.asm">
+      <Filter>源文件</Filter>
+    </CustomBuild>
+  </ItemGroup>
 </Project>

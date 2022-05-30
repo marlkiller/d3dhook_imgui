@@ -11,7 +11,7 @@
 
 using namespace std;
 
-Enum version = OpenGL;
+Enum version = None;
 
 
 
