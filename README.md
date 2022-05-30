@@ -6,6 +6,14 @@
 - c++/VisualStudio 
 - ImGui/stb_image/detours
 
+#### x64 ASM integration
+
+Command line : ml64 /Fo $(IntDir)%(fileName).obj /c %(fileName).asm
+Output : $(IntDir)%(fileName).obj
+
+![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/asm_64.jpg)
+![example](https://raw.githubusercontent.com/marlkiller/d3dhook_kiero/master/image/call_msg_box.jpg)
+
 ### Preview
 
 > Menu
