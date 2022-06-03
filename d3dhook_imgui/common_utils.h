@@ -23,5 +23,6 @@ namespace common_utils {
     void getGameRect(HWND hwndGame, RECT& RectGame);
     int GetRandNumber(const int low, const int high);
     Enum GetDirectVersion();
+    Enum string_to_enum(char* val);
     const char* enum_to_string(int type);
 }

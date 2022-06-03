@@ -42,6 +42,8 @@ struct DrawItem
 
 extern HMODULE Dll_HWND;
 extern HWND GAME_HWND;
+extern char MODULE_NAME[MAX_PATH];
+
 extern float HWND_SCREEN_X;
 extern float HWND_SCREEN_Y;
 

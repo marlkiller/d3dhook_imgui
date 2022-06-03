@@ -42,8 +42,21 @@ namespace common_utils {
 		
 		
 	}
+
+	const char* enum_vals[] = { "None", "D3D9", "D3D10", "D3D11", "D3D12", "OpenGL", "Vulkan" };
+	const Enum enum_keys[] = { None,D3D9, D3D10,D3D11,D3D12,OpenGL,Vulkan};
+
+
+	Enum string_to_enum(char* val) {
+
+		for (int i = 0; i < 7; i++)
+		{
+			if (strstr(val, enum_vals[i]))
+				return enum_keys[i];
+		}
+		return Auto;
+	}
 	const char* enum_to_string(int index) {
-		const char* enum_vals[] = { "None", "D3D9", "D3D10", "D3D11", "D3D12", "OpenGL", "Vulkan" };
 		return  enum_vals[index];
 	}
 

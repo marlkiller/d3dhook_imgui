@@ -14,6 +14,7 @@ EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3);
  
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
+char MODULE_NAME[MAX_PATH] = { 0 };
 float HWND_SCREEN_X;
 float HWND_SCREEN_Y;
 
@@ -123,7 +124,7 @@ void DrawMainWin()
             char* title = "this is title";
             char* val = "this is val";
             DWORD_PTR lpAddr = (DWORD_PTR)GetProcAddress(GetModuleHandle("user32.dll"), "MessageBoxA");
-
+            LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr)
 
            /* 
             eg : int r = calc (1, 2, 3, 4, 5);
