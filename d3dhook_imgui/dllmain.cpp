@@ -45,10 +45,23 @@ Enum version = None;
 
 int mainThread()
 {
-    common_utils::SearchModules();
-    //Enum version = common_utils::GetDirectVersion();
-    LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
+    //DisableThreadLibraryCalls(hModule);
+    TCHAR full_path[MAX_PATH];
+    GetModuleFileName(Dll_HWND, full_path, MAX_PATH);
+    char fname[MAX_PATH] = { 0 };
+    char ext[MAX_PATH] = { 0 };
+    _splitpath(full_path, 0, 0, fname, ext);
+    sprintf(MODULE_NAME, "%s%s", fname, ext);
+    LOG_INFO("Support version is {None, D3D9, D3D10, D3D11, D3D12, OpenGL, Vulkan}")
+    LOG_INFO("Current runtime path is {%s} - {%s}", full_path, MODULE_NAME);
 
+    Enum pick_version = common_utils::string_to_enum(MODULE_NAME);
+    if (pick_version != Auto)
+        version = pick_version;
+    
+    //Enum version = common_utils::GetDirectVersion();
+    common_utils::SearchModules();
+    LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
 
     switch (version)
     {
@@ -86,7 +99,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
-        //DisableThreadLibraryCalls(hModule);
 
         LOG_INFO("DLL_PROCESS_ATTACH {%d},{%d},{%d}", hModule, ul_reason_for_call, lpReserved)
 

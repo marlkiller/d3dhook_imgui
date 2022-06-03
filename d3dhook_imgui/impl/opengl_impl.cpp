@@ -85,7 +85,7 @@ void LoadTextureMemary(int index, int resource_id, char* resource_type)
 
 
 
-    //HINSTANCE Dll_HWND = GetModuleHandle("d3dhook_kiero.dll");
+    //HINSTANCE Dll_HWND = GetModuleHandle(MODULE_NAME);
     HRSRC res = ::FindResource(Dll_HWND, MAKEINTRESOURCE(resource_id), TEXT(resource_type));
     DWORD size = ::SizeofResource(Dll_HWND, res);
     HGLOBAL mem = ::LoadResource(Dll_HWND, res);

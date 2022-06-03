@@ -8,12 +8,13 @@
 #include "imgui/gl3w.h"
 #include "logger.h"
 
-//EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);//声明
+//EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);
 //extern "C" __int64 __stdcall  vt_dev1();
-EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3);//声明
+EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3);
  
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
+char MODULE_NAME[MAX_PATH] = { 0 };
 float HWND_SCREEN_X;
 float HWND_SCREEN_Y;
 
@@ -123,9 +124,18 @@ void DrawMainWin()
             char* title = "this is title";
             char* val = "this is val";
             DWORD_PTR lpAddr = (DWORD_PTR)GetProcAddress(GetModuleHandle("user32.dll"), "MessageBoxA");
-
+            LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr)
 
            /* 
+            eg : int r = calc (1, 2, 3, 4, 5);
+
+            mov         dword ptr [rsp+20h],5
+            mov         r9,4
+            mov         r8,3
+            mov         rdx,2
+            mov         rcx,1
+            call        calc
+
             X64 的MessageBoxA, 好像必须按照 r9 r8 rdx rcx 顺序来push参数, 不晓得为什么
             函数内部, 会将寄存器传参的值(rcx, rdx, r8, r9)保存到我们申请的预留空间中.所以这里我们push参数直接 mov, xx, x, 就可以了
 
