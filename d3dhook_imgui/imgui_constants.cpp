@@ -10,7 +10,7 @@
 
 //EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);
 //extern "C" __int64 __stdcall  vt_dev1();
-EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3);
+EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3, char* u4);
  
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
@@ -123,9 +123,11 @@ void DrawMainWin()
         {
             char* title = "this is title";
             char* val = "this is val";
+            char* asm_print_format = "asm_ret_resut : %p\n";
             DWORD_PTR lpAddr = (DWORD_PTR)GetProcAddress(GetModuleHandle("user32.dll"), "MessageBoxA");
-            LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr)
-
+            LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr);
+            LOG_INFO("printf addr is -> %p", &printf);
+            //printf("fuckyou %p",0x123);
            /* 
             eg : int r = calc (1, 2, 3, 4, 5);
 
@@ -147,8 +149,10 @@ void DrawMainWin()
             而且特别要注意 sub 的栈大小要16位对齐, 比如我们的 48模16 = 0
             */
             #if defined(_M_X64)	
-            asm_msg_box_x64(title, val, lpAddr);
+            asm_msg_box_x64(title, val, lpAddr, asm_print_format);
+
             #else
+
               _asm {
                   push 0;
                   mov eax, title;
@@ -158,6 +162,12 @@ void DrawMainWin()
                   push 0;
                   mov eax, lpAddr;
                   call eax;
+
+                  push eax;
+                  mov eax, asm_print_format;
+                  push eax;
+                  call printf;
+                  add esp, 0x8;
               }
             #endif
 
