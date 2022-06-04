@@ -27,17 +27,17 @@ namespace common_utils {
 	void SearchModules() {
 		HMODULE handler;
 		handler = GetModuleHandle("opengl32.dll");
-		LOG_INFO("opengl32.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("opengl32.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		handler = GetModuleHandle("vulkan-1.dll");
-		LOG_INFO("vulkan-1.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("vulkan-1.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		handler = GetModuleHandle("d3d9.dll");
-		LOG_INFO("d3d9.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("d3d9.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		handler = GetModuleHandle("d3d10.dll");
-		LOG_INFO("d3d10.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("d3d10.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		handler = GetModuleHandle("d3d11.dll");
-		LOG_INFO("d3d11.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("d3d11.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		handler = GetModuleHandle("d3d12.dll");
-		LOG_INFO("d3d12.dll (%x) -> {%s} ", handler, handler ? "OK" : "NO");
+		LOG_INFO("d3d12.dll (%p) -> {%s} ", handler, handler ? "OK" : "NO");
 		
 		
 		

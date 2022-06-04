@@ -16,7 +16,7 @@
 
 using namespace std;
 
-Enum version = None;
+Enum version = D3D9;
 
 
 
