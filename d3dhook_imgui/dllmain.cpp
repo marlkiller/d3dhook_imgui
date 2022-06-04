@@ -7,6 +7,11 @@
 #include "logger.h"
 #include <iostream>
 #include "common_utils.h"
+#include "impl/d3d9_impl.h"
+#include "impl/d3d10_impl.h"
+#include "impl/d3d11_impl.h"
+#include "impl/opengl_impl.h"
+#include "impl/win32_impl.h"
 
 
 using namespace std;
@@ -15,25 +20,25 @@ Enum version = None;
 
 
 
-#if version==D3D9
-# include "impl/d3d9_impl.h"
-#endif
-#if  version==D3D10
-# include "impl/d3d10_impl.h"
-#endif
-#if  version==D3D11
-# include "impl/d3d11_impl.h"
-#endif
-#if KIERO_INCLUDE_D3D12
-#endif
-#if  version==OpenGL
-# include "impl/opengl_impl.h"
-#endif
-#if version==Vulkan
-#endif
-#if version==None
-# include "impl/win32_impl.h"
-#endif
+//#if version==D3D9
+//# include "impl/d3d9_impl.h"
+//#endif
+//#if  version==D3D10
+//# include "impl/d3d10_impl.h"
+//#endif
+//#if  version==D3D11
+//# include "impl/d3d11_impl.h"
+//#endif
+//#if KIERO_INCLUDE_D3D12
+//#endif
+//#if  version==OpenGL
+//# include "impl/opengl_impl.h"
+//#endif
+//#if version==Vulkan
+//#endif
+//#if version==None
+//# include "impl/win32_impl.h"
+//#endif
  
 
 #ifdef _DEBUG
@@ -58,10 +63,10 @@ int mainThread()
     Enum pick_version = common_utils::string_to_enum(MODULE_NAME);
     if (pick_version != Auto)
         version = pick_version;
-    
+
     //Enum version = common_utils::GetDirectVersion();
-    common_utils::SearchModules();
     LOG_INFO("Get directX version is {%d}-> %s", version, common_utils::enum_to_string(version));
+    common_utils::SearchModules();
 
     switch (version)
     {
