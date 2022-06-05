@@ -128,26 +128,7 @@ void DrawMainWin()
             LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr);
             LOG_INFO("printf addr is -> %p", &printf);
             //printf("fuckyou %p",0x123);
-           /* 
-            eg : int r = calc (1, 2, 3, 4, 5);
-
-            mov         dword ptr [rsp+20h],5
-            mov         r9,4
-            mov         r8,3
-            mov         rdx,2
-            mov         rcx,1
-            call        calc
-
-            X64 的MessageBoxA, 好像必须按照 r9 r8 rdx rcx 顺序来push参数, 不晓得为什么
-            函数内部, 会将寄存器传参的值(rcx, rdx, r8, r9)保存到我们申请的预留空间中.所以这里我们push参数直接 mov, xx, x, 就可以了
-
-            而且还要特别注意 sub rsp, 30  与 add rsp, 30, 我是挨个试, 才把堆栈搞平衡, 虽然不太清楚原理....
-            我的猜测 : 不知对否
-            push 了 4个参数, = 4x8 = 32 = 0x20,
-            加上我们call函数用了一个 eax, 32 + 8 = 40 = 0x28
-            40 + 8 (函数返回地址) = 48 = 0x30, 关于这个 函数返回地址我也不太了解 也是网上找的答案..
-            而且特别要注意 sub 的栈大小要16位对齐, 比如我们的 48模16 = 0
-            */
+          
             #if defined(_M_X64)	
             asm_msg_box_x64(title, val, lpAddr, asm_print_format);
 
