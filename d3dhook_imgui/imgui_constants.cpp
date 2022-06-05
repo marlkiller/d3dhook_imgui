@@ -8,10 +8,13 @@
 #include "imgui/gl3w.h"
 #include "logger.h"
 
-//EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);
-//extern "C" __int64 __stdcall  vt_dev1();
+// EXTERN_C ULONG64 vt_dev(char* u1, char* u2, ULONG64 u3);
+// extern "C" __int64 __stdcall  vt_dev1();
 EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3, char* u4);
- 
+// Add "WINAPI" if "WINAPI" declared in DLL
+typedef intptr_t(WINAPI *TPCALL4) (intptr_t u1, char* u2, char* u3, intptr_t u4); 
+
+
 HMODULE Dll_HWND = nullptr;
 HWND GAME_HWND = nullptr;
 char MODULE_NAME[MAX_PATH] = { 0 };
@@ -128,7 +131,12 @@ void DrawMainWin()
             LOG_INFO("user32.dll:MessageBoxA addr is -> %p", lpAddr);
             LOG_INFO("printf addr is -> %p", &printf);
             //printf("fuckyou %p",0x123);
-          
+
+            /*TPCALL4 tpcall4 = (TPCALL4)lpAddr;
+            intptr_t ret = tpcall4(0, title, val, 0);
+            LOG_INFO("tpcall4 ret %p", ret);*/
+
+
             #if defined(_M_X64)	
             asm_msg_box_x64(title, val, lpAddr, asm_print_format);
 
