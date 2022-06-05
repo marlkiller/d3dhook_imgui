@@ -28,8 +28,7 @@ asm_msg_box_x64 PROC  ;
     mov r8, [rsp+8]
     mov rdx, [rsp+10h]
     mov rcx,0
-    mov rax,[rsp+18h]
-    call rax
+    call qword ptr [rsp+18h]
 
     mov rcx,[rsp+20h]
     mov rdx,rax

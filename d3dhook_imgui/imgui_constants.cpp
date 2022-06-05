@@ -137,17 +137,13 @@ void DrawMainWin()
             __asm {
 
                   push 0;
-                  mov eax, title;
-                  push eax;
-                  mov eax, val;
-                  push eax;
+                  push title;
+                  push val;
                   push 0;
-                  mov eax, lpAddr;
-                  call eax;
+                  call lpAddr;
 
                   push eax;
-                  mov eax, asm_print_format;
-                  push eax;
+                  push asm_print_format;
                   call printf;
                   add esp, 0x8;
             }
