@@ -153,7 +153,8 @@ void DrawMainWin()
 
             #else
 
-              _asm {
+            __asm {
+
                   push 0;
                   mov eax, title;
                   push eax;
@@ -168,7 +169,7 @@ void DrawMainWin()
                   push eax;
                   call printf;
                   add esp, 0x8;
-              }
+            }
             #endif
 
             
