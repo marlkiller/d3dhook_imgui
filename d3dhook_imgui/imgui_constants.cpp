@@ -12,7 +12,7 @@
 // extern "C" __int64 __stdcall  vt_dev1();
 EXTERN_C void asm_msg_box_x64(char* u1, char* u2, ULONG64 u3, char* u4);
 // Add "WINAPI" if "WINAPI" declared in DLL
-typedef intptr_t(WINAPI *TPCALL4) (intptr_t u1, char* u2, char* u3, intptr_t u4); 
+//typedef intptr_t(*TPCALL4) (intptr_t u1, char* u2, char* u3, intptr_t u4); 
 
 
 HMODULE Dll_HWND = nullptr;
