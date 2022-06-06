@@ -905,7 +905,7 @@ void impl::d3d11::init()
     oDrawIndexed = (DrawIndexed)(DWORD_PTR*)pContextVTable[12];
     oPresent = (Present)(DWORD_PTR*)pSwapChainVtable[8];
 
-    LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%x}, oDrawIndexed{%x}",oPresent,oDrawIndexed);
+    LOG_INFO("DetourTransactionBegin will be hooked >> oPresent {%p}, oDrawIndexed{%p}",oPresent,oDrawIndexed);
 
     //kiero::bind(8, (void**)&oPresent, hkPresent11);
 
@@ -914,12 +914,12 @@ void impl::d3d11::init()
     DetourAttach(&(LPVOID&)oPresent, (PBYTE)hkPresent11);
     DetourAttach(&(LPVOID&)oDrawIndexed, (PBYTE)hkDrawIndexed11);
     DetourTransactionCommit();
-    LOG_INFO("DetourTransactionBegin hook complete >> hkPresent11 {%x}, hkDrawIndexed11{%x}",hkPresent11,hkDrawIndexed11);
+    LOG_INFO("DetourTransactionBegin hook complete >> hkPresent11 {%p}, hkDrawIndexed11{%p}",hkPresent11,hkDrawIndexed11);
 
     DWORD dwOld;
     VirtualProtect(oPresent, 2, PAGE_EXECUTE_READWRITE, &dwOld);
     
-    LOG_INFO("VirtualProtect >> oPresent {%x}, dwOld{ %x}",oPresent,dwOld);
+    LOG_INFO("VirtualProtect >> oPresent {%p}, dwOld{ %p}",oPresent,dwOld);
 
     /*while (true) {
         Sleep(10);

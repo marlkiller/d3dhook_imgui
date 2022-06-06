@@ -64,7 +64,7 @@ void impl::d3d9::init()
 		Sleep(100);
 	}
 
-	LOG_INFO("[d3d9] Finding for d3d9.dll ...{%x}", GetModuleHandle("d3d9.dll"));
+	LOG_INFO("[d3d9] Finding for d3d9.dll ...{%p}", GetModuleHandle("d3d9.dll"));
 
 	IDirect3D9* d3d = NULL;
 	IDirect3DDevice9* pDevice = NULL;
@@ -114,7 +114,7 @@ void impl::d3d9::init()
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(LPVOID&)oEndScene, (PBYTE)hkEndScene);
 	DetourTransactionCommit();
-	LOG_INFO("DetourTransactionBegin hook complete >> oEndScene {%x}-> hkEndScene {%x}", oEndScene, hkEndScene);
+	LOG_INFO("DetourTransactionBegin hook complete >> oEndScene {%p}-> hkEndScene {%p}", oEndScene, hkEndScene);
 
 	//SetVertexShaderConstantF_orig = (SetVertexShaderConstantF)dVtable[94];
 	//DrawIndexedPrimitive_orig = (DrawIndexedPrimitive)dVtable[82];

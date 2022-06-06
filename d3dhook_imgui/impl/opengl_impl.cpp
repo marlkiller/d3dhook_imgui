@@ -138,7 +138,7 @@ void LoadGameInfo() {
     //g_hProcess = (HANDLE)-1; // current process -1
     g_hProcess = GetCurrentProcess(); // current process -1
     cstrike_base = (uintptr_t)GetModuleHandle("cstrike.exe");
-    LOG_INFO("g_hProcess -> %d, g_hProcessId -> %d, cstrike.exe -> %x", GetCurrentProcess(), GetCurrentProcessId(), cstrike_base);
+    LOG_INFO("g_hProcess -> %d, g_hProcessId -> %d, cstrike.exe -> %p", GetCurrentProcess(), GetCurrentProcessId(), cstrike_base);
     if (cstrike_base)
         game_load_flag = true;
     else
@@ -524,7 +524,7 @@ void impl::opengl::init()
     {
         hPENGLDLL = GetModuleHandle("opengl32.dll");
         Sleep(1000);
-        LOG_INFO("GetModuleHandle with opengl32.dll..{%x}", hPENGLDLL);
+        LOG_INFO("GetModuleHandle with opengl32.dll..{%p}", hPENGLDLL);
     } while (!hPENGLDLL);
     Sleep(100);
 

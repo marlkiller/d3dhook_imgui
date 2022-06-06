@@ -40,7 +40,7 @@ long __stdcall hkPresent10(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 		ImGui_ImplWin32_Init(desc.OutputWindow);
 		ImGui_ImplDX10_Init(device);
 		oWndProcHandler = (WNDPROC)SetWindowLongPtr(desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc);
-		LOG_INFO("Init with {%x},{%d},{%x},{%x}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, oWndProcHandler);
+		LOG_INFO("Init with {%x},{%d},{%p},{%p}", desc.OutputWindow, WNDPROC_INDEX, (LONG_PTR)hWndProc, oWndProcHandler);
 		init = true;
 	}
 
@@ -130,12 +130,12 @@ void impl::d3d10::init()
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(LPVOID&)oPresent, (PBYTE)hkPresent10);
     DetourTransactionCommit();
-    LOG_INFO("DetourTransactionBegin hook complete >> oPresent {%x}, hkPresent{%x}", oPresent, hkPresent10);
+    LOG_INFO("DetourTransactionBegin hook complete >> oPresent {%p}, hkPresent{%p}", oPresent, hkPresent10);
 
     DWORD dwOld;
     VirtualProtect(oPresent, 2, PAGE_EXECUTE_READWRITE, &dwOld);
 
-    LOG_INFO("VirtualProtect >> oPresent {%x}, dwOld{ %x}", oPresent, dwOld);
+    LOG_INFO("VirtualProtect >> oPresent {%p}, dwOld{ %p}", oPresent, dwOld);
 
     /*while (true) {
         Sleep(10);
