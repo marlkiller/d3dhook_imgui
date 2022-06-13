@@ -1,5 +1,7 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
+#include "dllmain.h"
+
 #include <cstdio>
 
 #include <Windows.h>
@@ -14,11 +16,15 @@
 #include "impl/win32_impl.h"
 
 
+
 using namespace std;
 
-Enum version = None;
+Enum version = OpenGL;
 
-
+void SayHello()
+{
+    cout << "Hello DLL!" << endl;
+}
 
 //#if version==D3D9
 //# include "impl/d3d9_impl.h"

@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "d3dhook_imgui", "d3dhook_imgui\d3dhook_imgui.vcxproj", "{9E7F6A41-C35F-4E78-B19D-068771550B82}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "console_app", "console_app\console_app.vcxproj", "{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{9E7F6A41-C35F-4E78-B19D-068771550B82}.Release|x64.Build.0 = Release|x64
 		{9E7F6A41-C35F-4E78-B19D-068771550B82}.Release|x86.ActiveCfg = Release|Win32
 		{9E7F6A41-C35F-4E78-B19D-068771550B82}.Release|x86.Build.0 = Release|Win32
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Debug|x64.ActiveCfg = Debug|x64
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Debug|x64.Build.0 = Debug|x64
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Debug|x86.ActiveCfg = Debug|Win32
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Debug|x86.Build.0 = Debug|Win32
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Release|x64.ActiveCfg = Release|x64
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Release|x64.Build.0 = Release|x64
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Release|x86.ActiveCfg = Release|Win32
+		{1B2E6644-A8B9-4DFB-8699-55D74CEDB178}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -44,14 +44,23 @@ typedef BOOL(APIENTRY* wglSwapBuffers)(HDC  hdc);
 typedef void (APIENTRY* glBegin_t)(GLenum mode);
 typedef void (APIENTRY* glClear_t)(GLbitfield mask);
 typedef void (APIENTRY* glColor4f_t)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+typedef void (APIENTRY* glColorPointer_t)(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+typedef void (APIENTRY* glGetFloatv_t) (unsigned int, float*);
+typedef void (APIENTRY* glBlendFunc_t) (GLenum sfactor, GLenum dfactor);
+
+
 //typedef void (APIENTRY* glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 //typedef void (APIENTRY* glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
 
-
+glColorPointer_t oGLColorPointer;
 wglSwapBuffers oWGLSwapBuffers;
 glBegin_t oGLBegin;
 glClear_t oGLClear;
 glColor4f_t oGLColor4f;
+
+glGetFloatv_t oGLGetFloatv;
+glBlendFunc_t oGLBlendFunc;
+
 GLuint texture_id[1024];
 int draw_esp_flag = 2;
 
@@ -471,14 +480,54 @@ void APIENTRY hkGLBegin(GLenum mode)
         {
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glBindTexture(GL_TEXTURE_2D, texture_id[1]);
+
+            /*GLint boundId = 0;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &boundId);
+            LOG_INFO("glGetIntegerv GL_TEXTURE_BINDING_2D {%d} {%d}", boundId, texture_id[1])*/
         }
         else if (draw_cclor_type == 2)
         {
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-            glBindTexture(GL_TEXTURE_2D, texture_id[3]);
+             //set color START
+            //glEnable(GL_COLOR_MATERIAL);
+            //glColor4f(0.0f, 1.0f, 0.0f, 0.5f);
+             //set color END
+             
+            // revert color START
+            //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+            // revert color END
+          
+            // draw skype color START
+            // glDisable(GL_DEPTH_TEST);
+            // glColor3f(1.0f, 0.0f, 0.0f);
+            // draw skype color END
+
+
+            // delete textures
+            /*GLint boundId = 0;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &boundId);
+            GLuint del = boundId;
+            glDeleteTextures(1, &del);*/
+
+            
+            //case1
+            //oGLGetFloatv(GL_CURRENT_COLOR, curcolor);
+            //glDisable(GL_DEPTH_TEST);
+            //glEnable(GL_BLEND);
+            //oGLBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            ////oGLColor4f(curcolor[0], curcolor[1], curcolor[2], onebased_a);
+            //oGLColor4f(0.0f, 1.0f, 0.0f, onebased_a);
+
+
+            //case2 set 2d color?
+            /*oGLGetFloatv(GL_CURRENT_COLOR, curcolor);
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            oGLBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
+            oGLColor4f(0.0f,1.0f, 0.0f, onebased_a);*/
+
+ 
             /*glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glBindTexture(GL_TEXTURE_2D, texture_id[2]);*/
-
 
             //如果要使用透明度, 则需要启用混合:glEnable(GL_BLEND);
             // RE DRAW
@@ -517,6 +566,11 @@ void APIENTRY hkGLClear(GLbitfield mask)
 
 }
 
+void APIENTRY hkGLColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer)
+{
+    return oGLColorPointer(size,type, stride, pointer);
+}
+
 void impl::opengl::init()
 {
     HMODULE hPENGLDLL = 0;
@@ -533,6 +587,9 @@ void impl::opengl::init()
     oGLBegin = (glBegin_t)GetProcAddress(hPENGLDLL, "glBegin");
     oGLClear = (glClear_t)GetProcAddress(hPENGLDLL, "glClear");
     oGLColor4f = (glColor4f_t)GetProcAddress(hPENGLDLL, "glColor4f");
+    oGLColorPointer = (glColorPointer_t)GetProcAddress(hPENGLDLL, "glColorPointer");
+    oGLGetFloatv = (glGetFloatv_t)GetProcAddress(hPENGLDLL, "glGetFloatv");
+    oGLBlendFunc = (glBlendFunc_t)GetProcAddress(hPENGLDLL, "glBlendFunc");
 
 
     DetourTransactionBegin();
@@ -541,6 +598,8 @@ void impl::opengl::init()
     DetourAttach(&(LPVOID&)oGLBegin, (PBYTE)hkGLBegin);
     DetourAttach(&(LPVOID&)oGLClear, (PBYTE)hkGLClear);
     DetourAttach(&(LPVOID&)oGLColor4f, (PBYTE)hkGLColor4f);
+    DetourAttach(&(LPVOID&)oGLColorPointer, (PBYTE)hkGLColorPointer);
+
     DetourTransactionCommit();
 
 }

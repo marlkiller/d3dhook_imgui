@@ -186,6 +186,9 @@
     <ClInclude Include="impl\win32_impl.h">
       <Filter>ImGui\impl</Filter>
     </ClInclude>
+    <ClInclude Include="dllmain.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.X64\detours.lib">
