@@ -1,6 +1,7 @@
 ## DirectX/OpenGL  detours hook. 
 
-Automatic adaptation is unstable,
+Automatic adaptation is unstable,  
+
 Sometimes you need to manually configure the target version in "mainThread"
 
 
