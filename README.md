@@ -1,5 +1,10 @@
 ## DirectX/OpenGL  detours hook. 
 
+Automatic adaptation is unstable,
+Sometimes you need to manually configure the target version in "mainThread"
+
+
+
 ### Build Environment
 - DirectX SDK https://www.microsoft.com/en-us/download/details.aspx?id=6812
 - OpenGL SDK
